@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Check for stylistic and formal issues in .rst and .py
@@ -15,7 +15,6 @@ import os
 import re
 import sys
 import getopt
-import subprocess
 from os.path import join, splitext, abspath, exists
 from collections import defaultdict
 
@@ -33,7 +32,8 @@ directives = [
     'autoexception', 'autofunction', 'automethod', 'automodule', 'centered',
     'cfunction', 'class', 'classmethod', 'cmacro', 'cmdoption', 'cmember',
     'code-block', 'confval', 'cssclass', 'ctype', 'currentmodule', 'cvar',
-    'data', 'deprecated', 'describe', 'directive', 'doctest', 'envvar', 'event',
+    'data', 'deprecated-removed', 'deprecated(?!-removed)', 'describe', 'directive',
+    'doctest', 'envvar', 'event',
     'exception', 'function', 'glossary', 'highlight', 'highlightlang', 'index',
     'literalinclude', 'method', 'module', 'moduleauthor', 'productionlist',
     'program', 'role', 'sectionauthor', 'seealso', 'sourcecode', 'staticmethod',
@@ -50,6 +50,7 @@ leaked_markup_re = re.compile(r'[a-z]::[^=]|:[a-z]+:|`|\.\.\s*\w+:')
 checkers = {}
 
 checker_props = {'severity': 1, 'falsepositives': False}
+
 
 def checker(*suffixes, **kwds):
     """Decorator to register a function as a checker."""
@@ -72,7 +73,7 @@ def check_syntax(fn, lines):
         code = code.replace('\r', '')
     try:
         compile(code, fn, 'exec')
-    except SyntaxError, err:
+    except SyntaxError as err:
         yield err.lineno, 'not compilable: %s' % err
 
 
@@ -139,7 +140,7 @@ Options:  -v       verbose (print all checked file names)
     try:
         gopts, args = getopt.getopt(argv[1:], 'vfs:i:')
     except getopt.GetoptError:
-        print usage
+        print(usage)
         return 2
 
     verbose = False
@@ -161,15 +162,14 @@ Options:  -v       verbose (print all checked file names)
     elif len(args) == 1:
         path = args[0]
     else:
-        print usage
+        print(usage)
         return 2
 
     if not exists(path):
-        print 'Error: path %s does not exist' % path
+        print('Error: path %s does not exist' % path)
         return 2
 
     count = defaultdict(int)
-    out = sys.stdout
 
     for root, dirs, files in os.walk(path):
         # ignore subdirs controlled by svn
@@ -196,13 +196,13 @@ Options:  -v       verbose (print all checked file names)
                 continue
 
             if verbose:
-                print 'Checking %s...' % fn
+                print('Checking %s...' % fn)
 
             try:
                 with open(fn, 'r') as f:
                     lines = list(f)
-            except (IOError, OSError), err:
-                print '%s: cannot open: %s' % (fn, err)
+            except (IOError, OSError) as err:
+                print('%s: cannot open: %s' % (fn, err))
                 count[4] += 1
                 continue
 
@@ -212,20 +212,20 @@ Options:  -v       verbose (print all checked file names)
                 csev = checker.severity
                 if csev >= severity:
                     for lno, msg in checker(fn, lines):
-                        print >>out, '[%d] %s:%d: %s' % (csev, fn, lno, msg)
+                        print('[%d] %s:%d: %s' % (csev, fn, lno, msg))
                         count[csev] += 1
     if verbose:
-        print
+        print()
     if not count:
         if severity > 1:
-            print 'No problems with severity >= %d found.' % severity
+            print('No problems with severity >= %d found.' % severity)
         else:
-            print 'No problems found.'
+            print('No problems found.')
     else:
         for severity in sorted(count):
             number = count[severity]
-            print '%d problem%s with severity %d found.' % \
-                  (number, number > 1 and 's' or '', severity)
+            print('%d problem%s with severity %d found.' %
+                  (number, number > 1 and 's' or '', severity))
     return int(bool(count))
 
 
