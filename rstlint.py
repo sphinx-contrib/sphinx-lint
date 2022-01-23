@@ -212,7 +212,7 @@ def check_whitespace(file, lines):
             yield lno + 1, "\\r in line"
         if "\t" in line:
             yield lno + 1, "OMG TABS!!!1"
-        if line[:-1].rstrip(" \t") != line[:-1]:
+        if line.rstrip("\n").rstrip(" \t") != line.rstrip("\n"):
             yield lno + 1, "trailing whitespace"
 
 

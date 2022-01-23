@@ -13,7 +13,6 @@ def test_role_missing_column(capsys, tmp_path):
     assert error_count == 1
 
 
-@pytest.mark.xfail(strict=True)
 def test_last_line(capsys, tmp_path):
     """Check regression of last line ending with space, a char, and no newline.
 
