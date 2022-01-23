@@ -178,8 +178,7 @@ def check_syntax(fn, lines):
 @checker(".rst", severity=2)
 def check_suspicious_constructs(fn, lines):
     """Check for suspicious reST constructs."""
-    inprod = False
-    for lno, line in enumerate(lines, start=1):
+    for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
         if seems_directive_re.search(line):
             yield lno, "comment seems to be intended as a directive"
         if three_dot_directive_re.search(line):
@@ -190,12 +189,8 @@ def check_suspicious_constructs(fn, lines):
             yield lno, "role use a single backtick, no backtick found."
         if role_glued_with_word.search(line):
             yield lno, "missing space before role"
-        if ".. productionlist::" in line:
-            inprod = True
-        elif not inprod and default_role_re.search(line):
+        elif default_role_re.search(line):
             yield lno, "default role used"
-        elif inprod and not line.strip():
-            inprod = False
 
 
 @checker(".py", ".rst")
@@ -236,21 +231,42 @@ def check_leaked_markup(fn, lines):
             yield lno + 1, "possibly leaked markup: %r" % line
 
 
-def hide_literal_blocks(lines):
-    """Tool to remove literal blocks from given lines.
+def is_multiline_non_rst_block(line):
+    if line.endswith("..\n"):
+        return True
+    if line.endswith("::\n"):
+        return True
+    if re.match(r"^ *\.\. code-block::", line):
+        return True
+    if re.match(r"^ *.. productionlist::", line):
+        return True
+    return False
 
-    It yields empty lines in place of blocks, so line numbers are
-    still meaningful.
+
+def hide_non_rst_blocks(lines, hidden_block_cb=None):
+    """Filters out literal, comments, code blocks, ...
+
+    The filter actually replace "removed" lines by empty lines, so the
+    line numbering still make sense.
     """
-    in_block = False
+    in_literal = None
+    excluded_lines = []
     for line in lines:
-        if line.endswith("::\n"):
-            in_block = True
-        elif in_block:
-            if line == "\n" or line.startswith(" "):
-                line = "\n"
+        if in_literal is not None:
+            current_indentation = len(re.match(" *", line).group(0))
+            if current_indentation > in_literal or line == "\n":
+                excluded_lines.append(line)
+                line = "\n"  # Hiding line
             else:
-                in_block = False
+                in_literal = None
+                if hidden_block_cb:
+                    hidden_block_cb("".join(excluded_lines))
+                excluded_lines = []
+        if in_literal is None and is_multiline_non_rst_block(line):
+            in_literal = len(re.match(" *", line).group(0))
+            assert excluded_lines == []
+        elif re.match(r" *\.\. ", line) and type_of_explicit_markup(line) == "comment":
+            line = "\n"
         yield line
 
 
@@ -268,26 +284,6 @@ def type_of_explicit_markup(line):
     return "comment"
 
 
-def hide_comments(lines):
-    """Tool to remove comments from given lines.
-
-    It yields empty lines in place of comments, so line numbers are
-    still meaningful.
-    """
-    in_multiline_comment = False
-    for line in lines:
-        if line == "..\n":
-            in_multiline_comment = True
-        elif in_multiline_comment:
-            if line == "\n" or line.startswith(" "):
-                line = "\n"
-            else:
-                in_multiline_comment = False
-        if line.startswith(".. ") and type_of_explicit_markup(line) == "comment":
-            line = "\n"
-        yield line
-
-
 @checker(".rst", severity=2)
 def check_missing_surrogate_space_on_plural(fn, lines):
     r"""Check for missing 'backslash-space' between a code sample a letter.
@@ -297,7 +293,7 @@ def check_missing_surrogate_space_on_plural(fn, lines):
     """
     in_code_sample = False
     check_next_one = False
-    for lno, line in enumerate(hide_comments(hide_literal_blocks(lines))):
+    for lno, line in enumerate(hide_non_rst_blocks(lines)):
         tokens = line.split("``")
         for token_no, token in enumerate(tokens):
             if check_next_one:
