@@ -17,6 +17,7 @@ from string import ascii_letters
 from os.path import join, splitext, abspath, exists
 from collections import defaultdict
 
+# fmt: off
 directives = [
     # standard docutils ones
     'admonition', 'attention', 'caution', 'class', 'compound', 'container',
@@ -41,6 +42,7 @@ directives = [
     'testsetup', 'toctree', 'todo', 'todolist', 'versionadded',
     'versionchanged'
 ]
+# fmt: on
 
 roles = [
     "(?<!py):class:",
@@ -140,35 +142,37 @@ leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 
 checkers = {}
 
-checker_props = {'severity': 1, 'falsepositives': False}
+checker_props = {"severity": 1, "falsepositives": False}
 
 
 def checker(*suffixes, **kwds):
     """Decorator to register a function as a checker."""
+
     def deco(func):
         for suffix in suffixes:
             checkers.setdefault(suffix, []).append(func)
         for prop in checker_props:
             setattr(func, prop, kwds.get(prop, checker_props[prop]))
         return func
+
     return deco
 
 
-@checker('.py', severity=4)
+@checker(".py", severity=4)
 def check_syntax(fn, lines):
     """Check Python examples for valid syntax."""
-    code = ''.join(lines)
-    if '\r' in code:
-        if os.name != 'nt':
-            yield 0, '\\r in code file'
-        code = code.replace('\r', '')
+    code = "".join(lines)
+    if "\r" in code:
+        if os.name != "nt":
+            yield 0, "\\r in code file"
+        code = code.replace("\r", "")
     try:
-        compile(code, fn, 'exec')
+        compile(code, fn, "exec")
     except SyntaxError as err:
-        yield err.lineno, 'not compilable: %s' % err
+        yield err.lineno, "not compilable: %s" % err
 
 
-@checker('.rst', severity=2)
+@checker(".rst", severity=2)
 def check_suspicious_constructs(fn, lines):
     """Check for suspicious reST constructs."""
     inprod = False
@@ -191,40 +195,42 @@ def check_suspicious_constructs(fn, lines):
             inprod = False
 
 
-@checker('.py', '.rst')
+@checker(".py", ".rst")
 def check_whitespace(fn, lines):
     """Check for whitespace and line length issues."""
     for lno, line in enumerate(lines):
-        if '\r' in line:
-            yield lno+1, '\\r in line'
-        if '\t' in line:
-            yield lno+1, 'OMG TABS!!!1'
-        if line[:-1].rstrip(' \t') != line[:-1]:
-            yield lno+1, 'trailing whitespace'
+        if "\r" in line:
+            yield lno + 1, "\\r in line"
+        if "\t" in line:
+            yield lno + 1, "OMG TABS!!!1"
+        if line[:-1].rstrip(" \t") != line[:-1]:
+            yield lno + 1, "trailing whitespace"
 
 
-@checker('.rst', severity=0)
+@checker(".rst", severity=0)
 def check_line_length(fn, lines):
     """Check for line length; this checker is not run by default."""
     for lno, line in enumerate(lines):
         if len(line) > 81:
             # don't complain about tables, links and function signatures
-            if line.lstrip()[0] not in '+|' and \
-               'http://' not in line and \
-               not line.lstrip().startswith(('.. function',
-                                             '.. method',
-                                             '.. cfunction')):
-                yield lno+1, "line too long"
+            if (
+                line.lstrip()[0] not in "+|"
+                and "http://" not in line
+                and not line.lstrip().startswith(
+                    (".. function", ".. method", ".. cfunction")
+                )
+            ):
+                yield lno + 1, "line too long"
 
 
-@checker('.html', severity=2, falsepositives=True)
+@checker(".html", severity=2, falsepositives=True)
 def check_leaked_markup(fn, lines):
     """Check HTML files for leaked reST markup; this only works if
     the HTML files have been built.
     """
     for lno, line in enumerate(lines):
         if leaked_markup_re.search(line):
-            yield lno+1, 'possibly leaked markup: %r' % line
+            yield lno + 1, "possibly leaked markup: %r" % line
 
 
 def hide_literal_blocks(lines):
@@ -246,17 +252,17 @@ def hide_literal_blocks(lines):
 
 
 def type_of_explicit_markup(line):
-    if re.match(fr'\.\. {all_directives}::', line):
-        return 'directive'
-    if re.match(r'\.\. \[[0-9]+\] ', line):
-        return 'footnote'
-    if re.match(r'\.\. \[[^\]]+\] ', line):
-        return 'citation'
-    if re.match(r'\.\. _.*[^_]: ', line):
-        return 'target'
-    if re.match(r'\.\. \|[^\|]*\| ', line):
-        return 'substitution_definition'
-    return 'comment'
+    if re.match(fr"\.\. {all_directives}::", line):
+        return "directive"
+    if re.match(r"\.\. \[[0-9]+\] ", line):
+        return "footnote"
+    if re.match(r"\.\. \[[^\]]+\] ", line):
+        return "citation"
+    if re.match(r"\.\. _.*[^_]: ", line):
+        return "target"
+    if re.match(r"\.\. \|[^\|]*\| ", line):
+        return "substitution_definition"
+    return "comment"
 
 
 def hide_comments(lines):
@@ -274,10 +280,9 @@ def hide_comments(lines):
                 line = "\n"
             else:
                 in_multiline_comment = False
-        if line.startswith(".. ") and type_of_explicit_markup(line) == 'comment':
+        if line.startswith(".. ") and type_of_explicit_markup(line) == "comment":
             line = "\n"
         yield line
-
 
 
 @checker(".rst", severity=2)
@@ -302,17 +307,21 @@ def check_missing_surrogate_space_on_plural(fn, lines):
                 check_next_one = True
             in_code_sample = not in_code_sample
 
+
 def main(argv):
-    usage = '''\
+    usage = (
+        """\
 Usage: %s [-v] [-f] [-s sev] [-i path]* [path]
 
 Options:  -v       verbose (print all checked file names)
           -f       enable checkers that yield many false positives
           -s sev   only show problems with severity >= sev
           -i path  ignore subdir or file path
-''' % argv[0]
+"""
+        % argv[0]
+    )
     try:
-        gopts, args = getopt.getopt(argv[1:], 'vfs:i:')
+        gopts, args = getopt.getopt(argv[1:], "vfs:i:")
     except getopt.GetoptError:
         print(usage)
         return 2
@@ -322,17 +331,17 @@ Options:  -v       verbose (print all checked file names)
     ignore = []
     falsepos = False
     for opt, val in gopts:
-        if opt == '-v':
+        if opt == "-v":
             verbose = True
-        elif opt == '-f':
+        elif opt == "-f":
             falsepos = True
-        elif opt == '-s':
+        elif opt == "-s":
             severity = int(val)
-        elif opt == '-i':
+        elif opt == "-i":
             ignore.append(abspath(val))
 
     if len(args) == 0:
-        path = '.'
+        path = "."
     elif len(args) == 1:
         path = args[0]
     else:
@@ -340,7 +349,7 @@ Options:  -v       verbose (print all checked file names)
         return 2
 
     if not exists(path):
-        print('Error: path %s does not exist' % path)
+        print("Error: path %s does not exist" % path)
         return 2
 
     count = defaultdict(int)
@@ -353,7 +362,7 @@ Options:  -v       verbose (print all checked file names)
 
         for fn in files:
             fn = join(root, fn)
-            if fn[:2] == './':
+            if fn[:2] == "./":
                 fn = fn[2:]
 
             # ignore files in ignore list
@@ -366,13 +375,13 @@ Options:  -v       verbose (print all checked file names)
                 continue
 
             if verbose:
-                print('Checking %s...' % fn)
+                print("Checking %s..." % fn)
 
             try:
-                with open(fn, 'r', encoding='utf-8') as f:
+                with open(fn, "r", encoding="utf-8") as f:
                     lines = list(f)
             except (IOError, OSError) as err:
-                print('%s: cannot open: %s' % (fn, err))
+                print("%s: cannot open: %s" % (fn, err))
                 count[4] += 1
                 continue
 
@@ -382,22 +391,24 @@ Options:  -v       verbose (print all checked file names)
                 csev = checker.severity
                 if csev >= severity:
                     for lno, msg in checker(fn, lines):
-                        print('[%d] %s:%d: %s' % (csev, fn, lno, msg))
+                        print("[%d] %s:%d: %s" % (csev, fn, lno, msg))
                         count[csev] += 1
     if verbose:
         print()
     if not count:
         if severity > 1:
-            print('No problems with severity >= %d found.' % severity)
+            print("No problems with severity >= %d found." % severity)
         else:
-            print('No problems found.')
+            print("No problems found.")
     else:
         for severity in sorted(count):
             number = count[severity]
-            print('%d problem%s with severity %d found.' %
-                  (number, number > 1 and 's' or '', severity))
+            print(
+                "%d problem%s with severity %d found."
+                % (number, number > 1 and "s" or "", severity)
+            )
     return int(bool(count))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main(sys.argv))
