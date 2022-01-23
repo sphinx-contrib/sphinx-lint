@@ -20,3 +20,12 @@ def test_last_line(capsys):
     out, err = capsys.readouterr()
     assert not err
     assert "trailing whitespace" not in out
+
+
+@pytest.mark.xfail(strict=True)
+def test_last_line_has_no_newline(capsys):
+    errors = check("test.rst", "Hello\nworld")
+    out, err = capsys.readouterr()
+    assert "No newline at end of file" in out
+    assert not err
+    assert errors
