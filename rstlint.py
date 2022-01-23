@@ -17,7 +17,7 @@ import re
 import sys
 import argparse
 from string import ascii_letters
-from os.path import join, splitext, exists
+from os.path import join, splitext, exists, isfile
 from collections import Counter
 
 # fmt: off
@@ -363,6 +363,27 @@ def is_disabled(msg, disabled_messages):
     return any(disabled in msg for disabled in disabled_messages)
 
 
+def walk(path, ignore_list):
+    """Wrapper around os.walk with an ignore list.
+
+    It also allow giving a file, thus yielding just that file.
+    """
+    if isfile(path):
+        yield path
+        return
+    for root, dirs, files in os.walk(path):
+        # ignore subdirs in ignore list
+        if any(ignore in root for ignore in ignore_list):
+            del dirs[:]
+            continue
+        for file in files:
+            file = join(root, file)
+            # ignore files in ignore list
+            if any(ignore in file for ignore in ignore_list):
+                continue
+            yield file
+
+
 def main(argv):
     args = parse_args(argv)
     if not exists(args.path):
@@ -371,46 +392,35 @@ def main(argv):
 
     count = Counter()
 
-    for root, dirs, files in os.walk(args.path):
-        # ignore subdirs in ignore list
-        if any(ignore in root for ignore in args.ignore):
-            del dirs[:]
+    for file in walk(args.path, args.ignore):
+        if file[:2] == "./":
+            file = file[2:]
+
+        ext = splitext(file)[1]
+        checkerlist = checkers.get(ext, None)
+        if not checkerlist:
             continue
 
-        for file in files:
-            file = join(root, file)
-            if file[:2] == "./":
-                file = file[2:]
+        if args.verbose:
+            print("Checking %s..." % file)
 
-            # ignore files in ignore list
-            if any(ignore in file for ignore in args.ignore):
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                lines = list(f)
+        except OSError as err:
+            print("%s: cannot open: %s" % (file, err))
+            count[4] += 1
+            continue
+
+        for checker in checkerlist:
+            if checker.falsepositives and not args.false_pos:
                 continue
-
-            ext = splitext(file)[1]
-            checkerlist = checkers.get(ext, None)
-            if not checkerlist:
-                continue
-
-            if args.verbose:
-                print("Checking %s..." % file)
-
-            try:
-                with open(file, "r", encoding="utf-8") as f:
-                    lines = list(f)
-            except OSError as err:
-                print("%s: cannot open: %s" % (file, err))
-                count[4] += 1
-                continue
-
-            for checker in checkerlist:
-                if checker.falsepositives and not args.false_pos:
-                    continue
-                csev = checker.severity
-                if csev >= args.severity:
-                    for lno, msg in checker(file, lines):
-                        if not is_disabled(msg, args.disabled):
-                            print("[%d] %s:%d: %s" % (csev, file, lno, msg))
-                            count[csev] += 1
+            csev = checker.severity
+            if csev >= args.severity:
+                for lno, msg in checker(file, lines):
+                    if not is_disabled(msg, args.disabled):
+                        print("[%d] %s:%d: %s" % (csev, file, lno, msg))
+                        count[csev] += 1
     if args.verbose:
         print()
     if not count:
