@@ -373,7 +373,7 @@ def walk(path, ignore_list):
     It also allow giving a file, thus yielding just that file.
     """
     if isfile(path):
-        yield path
+        yield path if path[:2] != "./" else path[2:]
         return
     for root, dirs, files in os.walk(path):
         # ignore subdirs in ignore list
@@ -385,7 +385,7 @@ def walk(path, ignore_list):
             # ignore files in ignore list
             if any(ignore in file for ignore in ignore_list):
                 continue
-            yield file
+            yield file if file[:2] != "./" else file[2:]
 
 
 def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
@@ -413,12 +413,8 @@ def main(argv):
     count = Counter()
 
     for file in walk(args.path, args.ignore):
-        if file[:2] == "./":
-            file = file[2:]
-
         ext = splitext(file)[1]
-        checkerlist = checkers.get(ext, None)
-        if not checkerlist:
+        if ext not in checkers:
             continue
 
         if args.verbose:
