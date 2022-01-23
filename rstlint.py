@@ -12,7 +12,7 @@
 import os
 import re
 import sys
-import getopt
+import argparse
 from string import ascii_letters
 from os.path import join, splitext, abspath, exists
 from collections import defaultdict
@@ -308,55 +308,51 @@ def check_missing_surrogate_space_on_plural(fn, lines):
             in_code_sample = not in_code_sample
 
 
-def main(argv):
-    usage = (
-        """\
-Usage: %s [-v] [-f] [-s sev] [-i path]* [path]
-
-Options:  -v       verbose (print all checked file names)
-          -f       enable checkers that yield many false positives
-          -s sev   only show problems with severity >= sev
-          -i path  ignore subdir or file path
-"""
-        % argv[0]
+def parse_args(argv):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="verbose (print all checked file names)",
     )
-    try:
-        gopts, args = getopt.getopt(argv[1:], "vfs:i:")
-    except getopt.GetoptError:
-        print(usage)
-        return 2
+    parser.add_argument(
+        "-f",
+        dest="false_pos",
+        action="store_true",
+        help="enable checked that yield many false positives",
+    )
+    parser.add_argument(
+        "-s",
+        "--severity",
+        type=int,
+        help="only show problems with severity >= sev",
+        default=1,
+    )
+    parser.add_argument(
+        "-i",
+        "--ignore",
+        action="append",
+        help="ignore subdire or file path",
+        default=[],
+    )
+    parser.add_argument("path", default=".", nargs="?")
+    args = parser.parse_args(argv[1:])
+    args.ignore = [abspath(ignore) for ignore in args.ignore]
+    return args
 
-    verbose = False
-    severity = 1
-    ignore = []
-    falsepos = False
-    for opt, val in gopts:
-        if opt == "-v":
-            verbose = True
-        elif opt == "-f":
-            falsepos = True
-        elif opt == "-s":
-            severity = int(val)
-        elif opt == "-i":
-            ignore.append(abspath(val))
 
-    if len(args) == 0:
-        path = "."
-    elif len(args) == 1:
-        path = args[0]
-    else:
-        print(usage)
-        return 2
-
-    if not exists(path):
-        print("Error: path %s does not exist" % path)
+def main(argv):
+    args = parse_args(argv)
+    if not exists(args.path):
+        print(f"Error: path {args.path} does not exist")
         return 2
 
     count = defaultdict(int)
 
-    for root, dirs, files in os.walk(path):
+    for root, dirs, files in os.walk(args.path):
         # ignore subdirs in ignore list
-        if abspath(root) in ignore:
+        if abspath(root) in args.ignore:
             del dirs[:]
             continue
 
@@ -366,7 +362,7 @@ Options:  -v       verbose (print all checked file names)
                 fn = fn[2:]
 
             # ignore files in ignore list
-            if abspath(fn) in ignore:
+            if abspath(fn) in args.ignore:
                 continue
 
             ext = splitext(fn)[1]
@@ -374,7 +370,7 @@ Options:  -v       verbose (print all checked file names)
             if not checkerlist:
                 continue
 
-            if verbose:
+            if args.verbose:
                 print("Checking %s..." % fn)
 
             try:
@@ -386,18 +382,18 @@ Options:  -v       verbose (print all checked file names)
                 continue
 
             for checker in checkerlist:
-                if checker.falsepositives and not falsepos:
+                if checker.falsepositives and not args.false_pos:
                     continue
                 csev = checker.severity
-                if csev >= severity:
+                if csev >= args.severity:
                     for lno, msg in checker(fn, lines):
                         print("[%d] %s:%d: %s" % (csev, fn, lno, msg))
                         count[csev] += 1
-    if verbose:
+    if args.verbose:
         print()
     if not count:
-        if severity > 1:
-            print("No problems with severity >= %d found." % severity)
+        if args.severity > 1:
+            print("No problems with severity >= %d found." % args.severity)
         else:
             print("No problems found.")
     else:
