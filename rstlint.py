@@ -207,6 +207,7 @@ def check_suspicious_constructs(file, lines):
 @checker(".py", ".rst")
 def check_whitespace(file, lines):
     """Check for whitespace and line length issues."""
+    lno = line = None
     for lno, line in enumerate(lines):
         if "\r" in line:
             yield lno + 1, "\\r in line"
@@ -214,6 +215,9 @@ def check_whitespace(file, lines):
             yield lno + 1, "OMG TABS!!!1"
         if line.rstrip("\n").rstrip(" \t") != line.rstrip("\n"):
             yield lno + 1, "trailing whitespace"
+    if line is not None:
+        if not line.endswith("\n"):
+            yield lno, "No newline at end of file (no-newline-at-end-of-file)."
 
 
 @checker(".rst", severity=0)
