@@ -384,6 +384,22 @@ def walk(path, ignore_list):
             yield file
 
 
+def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
+    errors = Counter()
+    ext = splitext(filename)[1]
+    lines = text.splitlines(keepends=True)
+    for checker in checkers[ext]:
+        if checker.falsepositives and not allow_false_positives:
+            continue
+        csev = checker.severity
+        if csev >= severity:
+            for lno, msg in checker(filename, lines):
+                if not is_disabled(msg, disabled):
+                    print("[%d] %s:%d: %s" % (csev, filename, lno, msg))
+                    errors[csev] += 1
+    return errors
+
+
 def main(argv):
     args = parse_args(argv)
     if not exists(args.path):
@@ -406,21 +422,14 @@ def main(argv):
 
         try:
             with open(file, "r", encoding="utf-8") as f:
-                lines = list(f)
+                text = f.read()
         except OSError as err:
             print("%s: cannot open: %s" % (file, err))
             count[4] += 1
             continue
 
-        for checker in checkerlist:
-            if checker.falsepositives and not args.false_pos:
-                continue
-            csev = checker.severity
-            if csev >= args.severity:
-                for lno, msg in checker(file, lines):
-                    if not is_disabled(msg, args.disabled):
-                        print("[%d] %s:%d: %s" % (csev, file, lno, msg))
-                        count[csev] += 1
+        count.update(check(file, text, args.false_pos, args.severity, args.disabled))
+
     if args.verbose:
         print()
     if not count:
