@@ -14,7 +14,7 @@ import re
 import sys
 import argparse
 from string import ascii_letters
-from os.path import join, splitext, abspath, exists
+from os.path import join, splitext, exists
 from collections import defaultdict
 
 # fmt: off
@@ -346,7 +346,6 @@ def parse_args(argv):
     )
     parser.add_argument("path", default=".", nargs="?")
     args = parser.parse_args(argv[1:])
-    args.ignore = [abspath(ignore) for ignore in args.ignore]
     return args
 
 
@@ -364,7 +363,7 @@ def main(argv):
 
     for root, dirs, files in os.walk(args.path):
         # ignore subdirs in ignore list
-        if abspath(root) in args.ignore:
+        if any(ignore in root for ignore in args.ignore):
             del dirs[:]
             continue
 
@@ -374,7 +373,7 @@ def main(argv):
                 fn = fn[2:]
 
             # ignore files in ignore list
-            if abspath(fn) in args.ignore:
+            if any(ignore in fn for ignore in args.ignore):
                 continue
 
             ext = splitext(fn)[1]
