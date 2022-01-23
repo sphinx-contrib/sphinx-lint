@@ -2,7 +2,6 @@ import pytest
 from rstlint import main
 
 
-@pytest.mark.xfail(strict=True)
 def test_role_missing_column(capsys, tmp_path):
     """rstlint should find missing leading column in roles."""
     file = tmp_path / "testfile.rst"

@@ -139,6 +139,15 @@ role_with_no_backticks = re.compile(r"%s[^` ]" % all_roles)
 # the :c:func:`PyThreadState_LeaveTracing` function.
 role_glued_with_word = re.compile(r"[a-zA-Z]%s" % all_roles)
 
+# Find role missing a column, like:
+#    the c:macro:`PY_VERSION_HEX`
+# instead of:
+#    the :c:macro:`PY_VERSION_HEX`
+role_missing_leading_column = re.compile(
+    r" %s" % ("(" + "|".join(role[1:] + "`" for role in roles if role[0] == ":") + ")")
+)
+
+
 default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
 leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 
@@ -189,6 +198,8 @@ def check_suspicious_constructs(fn, lines):
             yield lno, "role use a single backtick, no backtick found."
         if role_glued_with_word.search(line):
             yield lno, "missing space before role"
+        if match := role_missing_leading_column.search(line):
+            yield lno, f"missing column before role near {match[0]!r}"
         elif default_role_re.search(line):
             yield lno, "default role used"
 
