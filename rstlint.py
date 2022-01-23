@@ -388,7 +388,7 @@ def main(argv):
             try:
                 with open(fn, "r", encoding="utf-8") as f:
                     lines = list(f)
-            except (IOError, OSError) as err:
+            except OSError as err:
                 print("%s: cannot open: %s" % (fn, err))
                 count[4] += 1
                 continue
