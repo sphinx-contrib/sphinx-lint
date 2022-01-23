@@ -171,7 +171,7 @@ def checker(*suffixes, **kwds):
 
 
 @checker(".py", severity=4)
-def check_syntax(fn, lines):
+def check_syntax(file, lines):
     """Check Python examples for valid syntax."""
     code = "".join(lines)
     if "\r" in code:
@@ -179,13 +179,13 @@ def check_syntax(fn, lines):
             yield 0, "\\r in code file"
         code = code.replace("\r", "")
     try:
-        compile(code, fn, "exec")
+        compile(code, file, "exec")
     except SyntaxError as err:
         yield err.lineno, "not compilable: %s" % err
 
 
 @checker(".rst", severity=2)
-def check_suspicious_constructs(fn, lines):
+def check_suspicious_constructs(file, lines):
     """Check for suspicious reST constructs."""
     for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
         if seems_directive_re.search(line):
@@ -205,7 +205,7 @@ def check_suspicious_constructs(fn, lines):
 
 
 @checker(".py", ".rst")
-def check_whitespace(fn, lines):
+def check_whitespace(file, lines):
     """Check for whitespace and line length issues."""
     for lno, line in enumerate(lines):
         if "\r" in line:
@@ -217,7 +217,7 @@ def check_whitespace(fn, lines):
 
 
 @checker(".rst", severity=0)
-def check_line_length(fn, lines):
+def check_line_length(file, lines):
     """Check for line length; this checker is not run by default."""
     for lno, line in enumerate(lines):
         if len(line) > 81:
@@ -233,7 +233,7 @@ def check_line_length(fn, lines):
 
 
 @checker(".html", severity=2, falsepositives=True)
-def check_leaked_markup(fn, lines):
+def check_leaked_markup(file, lines):
     """Check HTML files for leaked reST markup; this only works if
     the HTML files have been built.
     """
@@ -296,7 +296,7 @@ def type_of_explicit_markup(line):
 
 
 @checker(".rst", severity=2)
-def check_missing_surrogate_space_on_plural(fn, lines):
+def check_missing_surrogate_space_on_plural(file, lines):
     r"""Check for missing 'backslash-space' between a code sample a letter.
 
     Good: ``Point``\ s
@@ -377,28 +377,28 @@ def main(argv):
             del dirs[:]
             continue
 
-        for fn in files:
-            fn = join(root, fn)
-            if fn[:2] == "./":
-                fn = fn[2:]
+        for file in files:
+            file = join(root, file)
+            if file[:2] == "./":
+                file = file[2:]
 
             # ignore files in ignore list
-            if any(ignore in fn for ignore in args.ignore):
+            if any(ignore in file for ignore in args.ignore):
                 continue
 
-            ext = splitext(fn)[1]
+            ext = splitext(file)[1]
             checkerlist = checkers.get(ext, None)
             if not checkerlist:
                 continue
 
             if args.verbose:
-                print("Checking %s..." % fn)
+                print("Checking %s..." % file)
 
             try:
-                with open(fn, "r", encoding="utf-8") as f:
+                with open(file, "r", encoding="utf-8") as f:
                     lines = list(f)
             except OSError as err:
-                print("%s: cannot open: %s" % (fn, err))
+                print("%s: cannot open: %s" % (file, err))
                 count[4] += 1
                 continue
 
@@ -407,9 +407,9 @@ def main(argv):
                     continue
                 csev = checker.severity
                 if csev >= args.severity:
-                    for lno, msg in checker(fn, lines):
+                    for lno, msg in checker(file, lines):
                         if not is_disabled(msg, args.disabled):
-                            print("[%d] %s:%d: %s" % (csev, fn, lno, msg))
+                            print("[%d] %s:%d: %s" % (csev, file, lno, msg))
                             count[csev] += 1
     if args.verbose:
         print()
