@@ -18,7 +18,7 @@ import sys
 import argparse
 from string import ascii_letters
 from os.path import join, splitext, exists
-from collections import defaultdict
+from collections import Counter
 
 # fmt: off
 directives = [
@@ -369,7 +369,7 @@ def main(argv):
         print(f"Error: path {args.path} does not exist")
         return 2
 
-    count = defaultdict(int)
+    count = Counter()
 
     for root, dirs, files in os.walk(args.path):
         # ignore subdirs in ignore list
