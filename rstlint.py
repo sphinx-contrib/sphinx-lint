@@ -336,10 +336,22 @@ def parse_args(argv):
         help="ignore subdire or file path",
         default=[],
     )
+    parser.add_argument(
+        "-d",
+        "--disable",
+        dest="disabled",
+        action="append",
+        help="disable given checks",
+        default=[],
+    )
     parser.add_argument("path", default=".", nargs="?")
     args = parser.parse_args(argv[1:])
     args.ignore = [abspath(ignore) for ignore in args.ignore]
     return args
+
+
+def is_disabled(msg, disabled_messages):
+    return any(disabled in msg for disabled in disabled_messages)
 
 
 def main(argv):
@@ -387,8 +399,9 @@ def main(argv):
                 csev = checker.severity
                 if csev >= args.severity:
                     for lno, msg in checker(fn, lines):
-                        print("[%d] %s:%d: %s" % (csev, fn, lno, msg))
-                        count[csev] += 1
+                        if not is_disabled(msg, args.disabled):
+                            print("[%d] %s:%d: %s" % (csev, fn, lno, msg))
+                            count[csev] += 1
     if args.verbose:
         print()
     if not count:
