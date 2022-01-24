@@ -28,3 +28,17 @@ def test_last_line_has_no_newline(capsys):
     assert "No newline at end of file" in out
     assert not err
     assert errors
+
+
+@pytest.mark.xfail(strict=True)
+def test_inline_literal_inside_role(capsys):
+    errors = check(
+        "test.rst",
+        r""":emphasis:`This ``Too Shall\`\` Pass`
+even ``followed`` by ``inline literals``.
+""",
+    )
+    out, err = capsys.readouterr()
+    assert not out
+    assert not errors
+    assert not err
