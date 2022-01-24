@@ -148,6 +148,11 @@ glued_inline_literals = re.compile(
 #     :issue:`123`
 role_glued_with_word = re.compile(r"(^|\s)(?!:){}:`(?!`)".format(simplename))
 
+
+role_with_no_backticks = re.compile(
+    r"(^|\s):{}:(?![`:])[^\s`]+(\s|$)".format(simplename)
+)
+
 # Find role missing middle column, like:
 #    The :issue`123` is ...
 role_missing_right_column = re.compile(r"(^|\s):{}`(?!`)".format(simplename))
@@ -200,6 +205,9 @@ def check_suspicious_constructs(file, lines):
             yield lno, "role use a single backtick, double backtick found."
         if role_glued_with_word.search(line):
             yield lno, "missing space before role"
+        no_backticks = role_with_no_backticks.search(line)
+        if no_backticks:
+            yield lno, f"role with no backticks: {no_backticks.group(0)!r}"
         if role_missing_right_column.search(line):
             yield lno, "role missing column before first backtick."
         elif default_role_re.search(line):
