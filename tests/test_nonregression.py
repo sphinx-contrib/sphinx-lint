@@ -3,10 +3,13 @@ from rstlint import check
 
 
 def test_role_missing_column(capsys):
-    """rstlint should find missing leading column in roles."""
+    """rstlint should find missing leading column in roles.
+
+    It's at the end the same as role glued with word.
+    """
     error_count = check("test.rst", "The c:macro:`PY_VERSION_HEX` miss a column.\n")
     out, err = capsys.readouterr()
-    assert "column" in out
+    assert "role" in out
     assert not err
     assert error_count
 
@@ -41,3 +44,12 @@ even ``followed`` by ``inline literals``.
     assert not out
     assert not errors
     assert not err
+
+
+@pytest.mark.xfail(strict=True)
+def test_roles_may_not_be_hardcoded(capsys):
+    errors = check("test.rst", "such as :std:doc:`PyPA build <pypa-build:index>`\n")
+    out, err = capsys.readouterr()
+    assert not out
+    assert not err
+    assert not errors
