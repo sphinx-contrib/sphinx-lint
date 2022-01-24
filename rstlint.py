@@ -276,23 +276,27 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
     """
     in_literal = None
     excluded_lines = []
-    for line in lines:
+    block_line_start = None
+    for lineno, line in enumerate(lines, start=1):
         if in_literal is not None:
             current_indentation = len(re.match(" *", line).group(0))
             if current_indentation > in_literal or line == "\n":
-                excluded_lines.append(line)
+                excluded_lines.append(line if line == "\n" else line[in_literal:])
                 line = "\n"  # Hiding line
             else:
                 in_literal = None
                 if hidden_block_cb:
-                    hidden_block_cb("".join(excluded_lines))
+                    hidden_block_cb(block_line_start, "".join(excluded_lines))
                 excluded_lines = []
         if in_literal is None and is_multiline_non_rst_block(line):
             in_literal = len(re.match(" *", line).group(0))
+            block_line_start = lineno
             assert excluded_lines == []
         elif re.match(r" *\.\. ", line) and type_of_explicit_markup(line) == "comment":
             line = "\n"
         yield line
+    if excluded_lines and hidden_block_cb:
+        hidden_block_cb(block_line_start, "".join(excluded_lines))
 
 
 def type_of_explicit_markup(line):
@@ -320,6 +324,22 @@ def check_missing_surrogate_space_on_plural(file, lines):
         match = glued_inline_literals.search(line)
         if match and match.start() != 0:
             yield lno + 1, f"Missing backslash-space between literal and text (column {match.start()!r})."
+
+
+@checker(".rst", severity=1)
+def check_bad_dedent_in_block(file, lines):
+    """Check for dedent not being enough in code blocks."""
+
+    errors = []
+
+    def check_block(block_lineno, block):
+        for lineno, line in enumerate(block.splitlines()):
+            if re.match(" [^ ].*::$", line):
+                errors.append((block_lineno + lineno, "Bad dedent in block"))
+
+    list(hide_non_rst_blocks(lines, hidden_block_cb=check_block))
+    for error in errors:
+        yield error
 
 
 def parse_args(argv):

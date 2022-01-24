@@ -65,12 +65,13 @@ def test_filter_out_literal():
     out = []
     excluded = []
     for line in hide_non_rst_blocks(
-        LITERAL.splitlines(True), hidden_block_cb=excluded.append
+        LITERAL.splitlines(True),
+        hidden_block_cb=lambda lineno, block: excluded.append((lineno, block)),
     ):
         out.append(line)
     assert "".join(out) == LITERAL_EXPECTED
     assert (
-        excluded[0]
+        excluded[0][1]
         == """
   def enumerate(sequence, start=0):
       n = start
@@ -81,13 +82,13 @@ def test_filter_out_literal():
 """
     )
     assert (
-        excluded[1]
+        excluded[1][1]
         == """
-      >>> float('+1.23')
-      1.23
+   >>> float('+1.23')
+   1.23
 
-      >>> float('   -12345')
-      -12345.0
+   >>> float('   -12345')
+   -12345.0
 
 """
     )
@@ -139,12 +140,13 @@ def test_filter_out_funny_indent():
     out = []
     excluded = []
     for line in hide_non_rst_blocks(
-        LITERAL_FUNNY_INDENT.splitlines(True), hidden_block_cb=excluded.append
+        LITERAL_FUNNY_INDENT.splitlines(True),
+        hidden_block_cb=lambda lineno, block: excluded.append((lineno, block)),
     ):
         out.append(line)
     assert "".join(out) == LITERAL_FUNNY_INDENT_EXPECTED
     assert (
-        excluded[0]
+        excluded[0][1]
         == """
     Like we start at 4...
 
@@ -190,12 +192,13 @@ def test_filter_out_code_block():
     out = []
     excluded = []
     for line in hide_non_rst_blocks(
-        CODE_BLOCK.splitlines(True), hidden_block_cb=excluded.append
+        CODE_BLOCK.splitlines(True),
+        hidden_block_cb=lambda lineno, block: excluded.append((lineno, block)),
     ):
         out.append(line)
     assert "".join(out) == CODE_BLOCK_EXPECTED
     assert (
-        excluded[0]
+        excluded[0][1]
         == """
    $ cat multiple_line_file
    Even if there's empty lines
