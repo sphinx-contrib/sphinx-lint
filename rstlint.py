@@ -97,64 +97,11 @@ directives = [
 ]
 # fmt: on
 
-roles = [
-    "(?<!py):class:",
-    "(?<!:c|py):func:",
-    "(?<!py):meth:",
-    "(?<!:py):mod:",
-    ":exc:",
-    ":issue:",
-    ":attr:",
-    ":c:func:",
-    ":ref:",
-    ":const:",
-    ":term:",
-    "(?<!:c|py):data:",
-    ":keyword:",
-    ":file:",
-    ":pep:",
-    ":c:type:",
-    ":c:member:",
-    ":option:",
-    ":rfc:",
-    ":envvar:",
-    ":c:data:",
-    ":source:",
-    ":mailheader:",
-    ":program:",
-    ":c:macro:",
-    ":dfn:",
-    ":kbd:",
-    ":command:",
-    ":mimetype:",
-    ":opcode:",
-    ":manpage:",
-    ":py:data:",
-    ":RFC:",
-    ":pdbcmd:",
-    ":abbr:",
-    ":samp:",
-    ":token:",
-    ":PEP:",
-    ":sup:",
-    ":py:class:",
-    ":menuselection:",
-    ":doc:",
-    ":sub:",
-    ":py:meth:",
-    ":newsgroup:",
-    ":code:",
-    ":py:func:",
-    ":makevar:",
-    ":guilabel:",
-    ":title-reference:",
-    ":py:mod:",
-    ":download:",
-    ":2to3fixer:",
-]
 
 all_directives = "(" + "|".join(directives) + ")"
-all_roles = "(" + "|".join(roles) + ")"
+before_role = r"(^|(?<=[\s(/'{\[*-]))"
+simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
+role_head = r"({}:{}:)".format(before_role, simplename)  # A role, with a clean start
 
 # Find comments that looks like a directive, like:
 # .. versionchanged 3.6
@@ -174,7 +121,7 @@ three_dot_directive_re = re.compile(r"\.\.\. %s::" % all_directives)
 # :const:``None``
 # instead of:
 # :const:`None`
-double_backtick_role = re.compile(r"(?<!``)%s``" % all_roles)
+double_backtick_role = re.compile(r"(?<!``)%s``" % role_head)
 
 # Find inline literals glued to somthing else, like:
 # ``Point``s
@@ -190,26 +137,16 @@ glued_inline_literals = re.compile(
     r"(?<!{})``(?!{})".format(start_string_prefix, end_string_suffix)
 )
 
-# Find role used with no backticks instead of simple backticks like:
-# :const:None
-# instead of:
-# :const:`None`
-role_with_no_backticks = re.compile(r"%s[^` ]" % all_roles)
-
 # Find role glued with another word like:
-# the:c:func:`PyThreadState_LeaveTracing` function.
+#     the:c:func:`PyThreadState_LeaveTracing` function.
 # instead of:
-# the :c:func:`PyThreadState_LeaveTracing` function.
-role_glued_with_word = re.compile(r"[a-zA-Z]%s" % all_roles)
-
-# Find role missing a column, like:
-#    the c:macro:`PY_VERSION_HEX`
+#     the :c:func:`PyThreadState_LeaveTracing` function.
+#
+# Also finds roles missing their leading column like:
+#     issue:`123`
 # instead of:
-#    the :c:macro:`PY_VERSION_HEX`
-role_missing_leading_column = re.compile(
-    r" %s" % ("(" + "|".join(role[1:] + "`" for role in roles if role[0] == ":") + ")")
-)
-
+#     :issue:`123`
+role_glued_with_word = re.compile(r"(^|\s)(?!:){}:`(?!`)".format(simplename))
 
 default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
 leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
@@ -257,12 +194,8 @@ def check_suspicious_constructs(file, lines):
             yield lno, "directive should start with two dots, not three."
         if double_backtick_role.search(line):
             yield lno, "role use a single backtick, double backtick found."
-        if role_with_no_backticks.search(line):
-            yield lno, "role use a single backtick, no backtick found."
         if role_glued_with_word.search(line):
             yield lno, "missing space before role"
-        if match := role_missing_leading_column.search(line):
-            yield lno, f"missing column before role near {match[0]!r}"
         elif default_role_re.search(line):
             yield lno, "default role used"
 

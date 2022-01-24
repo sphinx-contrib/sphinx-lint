@@ -46,7 +46,6 @@ even ``followed`` by ``inline literals``.
     assert not err
 
 
-@pytest.mark.xfail(strict=True)
 def test_roles_may_not_be_hardcoded(capsys):
     errors = check("test.rst", "such as :std:doc:`PyPA build <pypa-build:index>`\n")
     out, err = capsys.readouterr()
