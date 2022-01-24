@@ -30,7 +30,6 @@ def test_last_line_has_no_newline(capsys):
     assert errors
 
 
-@pytest.mark.xfail(strict=True)
 def test_inline_literal_inside_role(capsys):
     errors = check(
         "test.rst",
