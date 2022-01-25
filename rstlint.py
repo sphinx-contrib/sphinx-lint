@@ -157,6 +157,16 @@ role_with_no_backticks = re.compile(
 #    The :issue`123` is ...
 role_missing_right_column = re.compile(r"(^|\s):{}`(?!`)".format(simplename))
 
+# Find role glued with a plural mark or something like:
+#    The :exc:`Exception`s
+# instead of:
+#    The :exc:`Exceptions`\ s
+role_body = r"([^`]|\s`+|\\`)+"
+role_missing_surrogate_escape = re.compile(
+    r"{}`{}(?<![\\\s`])`(?!{})".format(role_head, role_body, end_string_suffix)
+)
+
+
 default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
 leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 
@@ -193,6 +203,10 @@ def check_syntax(file, lines):
         yield err.lineno, "not compilable: %s" % err
 
 
+def is_in_a_table(error, line):
+    return "|" in line[: error.start()] and "|" in line[error.end() :]
+
+
 @checker(".rst", severity=2)
 def check_suspicious_constructs(file, lines):
     """Check for suspicious reST constructs."""
@@ -210,6 +224,9 @@ def check_suspicious_constructs(file, lines):
             yield lno, f"role with no backticks: {no_backticks.group(0)!r}"
         if role_missing_right_column.search(line):
             yield lno, "role missing column before first backtick."
+        error = role_missing_surrogate_escape.search(line)
+        if error and not is_in_a_table(error, line):
+            yield lno, f"role missing surrogate escape before plural: {error.group(0)!r}"
         elif default_role_re.search(line):
             yield lno, "default role used"
 
