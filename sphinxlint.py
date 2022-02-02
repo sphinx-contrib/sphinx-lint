@@ -361,7 +361,9 @@ def check_bad_dedent_in_block(file, lines):
         yield error
 
 
-def parse_args(argv):
+def parse_args(argv=None):
+    if argv is None:
+        argv = sys.argv
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "-v",
@@ -443,7 +445,7 @@ def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
     return errors
 
 
-def main(argv):
+def main(argv=None):
     args = parse_args(argv)
     if not exists(args.path):
         print(f"Error: path {args.path} does not exist")
@@ -483,8 +485,8 @@ def main(argv):
                 "%d problem%s with severity %d found."
                 % (number, number > 1 and "s" or "", severity)
             )
-    return int(bool(count))
+    sys.exit(int(bool(count)))
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    main()
