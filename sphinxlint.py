@@ -12,6 +12,8 @@
 """Sphinx rst linter.
 """
 
+__version__ = "0.1"
+
 import os
 import re
 import sys
