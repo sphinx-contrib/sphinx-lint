@@ -1,9 +1,9 @@
 import pytest
-from rstlint import check
+from sphinxlint import check
 
 
 def test_role_missing_column(capsys):
-    """rstlint should find missing leading column in roles.
+    """sphinx-lint should find missing leading column in roles.
 
     It's at the end the same as role glued with word.
     """
