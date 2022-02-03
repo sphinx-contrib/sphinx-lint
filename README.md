@@ -1,7 +1,7 @@
 # Sphinx Lint
 
 Sphinx Lint is based on [rstlint.py from
-cpython](https://github.com/python/cpython/blob/main/Doc/tools/rstlint.py).
+cpython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
 
 
 ## What sphinx-lint is, what it is not?
