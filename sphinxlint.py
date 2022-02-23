@@ -168,8 +168,12 @@ role_missing_surrogate_escape = re.compile(
     r"{}`{}(?<![\\\s`])`(?!{})".format(role_head, role_body, end_string_suffix)
 )
 
-
+# TODO: cover more cases
+# https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#toc-entry-44
 default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
+
+seems_hyperlink_re = re.compile(r"`[^`]*?(\s?)<https?://[^`]+>`(_?)")
+
 leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 
 
@@ -217,6 +221,11 @@ def check_suspicious_constructs(file, lines):
             yield lno, "comment seems to be intended as a directive"
         if three_dot_directive_re.search(line):
             yield lno, "directive should start with two dots, not three."
+        for match in seems_hyperlink_re.finditer(line):
+            if not match.group(1):
+                yield lno, "missing space before < in hyperlink"
+            if not match.group(2):
+                yield lno, "missing underscore after closing backtick in hyperlink"
         if double_backtick_role.search(line):
             yield lno, "role use a single backtick, double backtick found."
         if role_glued_with_word.search(line):
