@@ -119,6 +119,10 @@ seems_directive_re = re.compile(r"(?<!\.)\.\. %s([^a-z:]|:(?!:))" % all_directiv
 # .. versionchanged:: 3.6
 three_dot_directive_re = re.compile(r"\.\.\. %s::" % all_directives)
 
+# Find directive missing space after double colon, like:
+# .. versionchanged::3.6
+missing_space_directive_re = re.compile(r"(?<!\.)\.\. %s::[^\s]" % simplename)
+
 # Find role used with double backticks instead of simple backticks like:
 # :const:``None``
 # instead of:
@@ -217,6 +221,8 @@ def check_suspicious_constructs(file, lines):
             yield lno, "comment seems to be intended as a directive"
         if three_dot_directive_re.search(line):
             yield lno, "directive should start with two dots, not three."
+        if missing_space_directive_re.search(line):
+            yield lno, "missing space after :: in directive"
         if double_backtick_role.search(line):
             yield lno, "role use a single backtick, double backtick found."
         if role_glued_with_word.search(line):
