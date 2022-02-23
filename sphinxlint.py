@@ -22,6 +22,8 @@ from string import ascii_letters
 from os.path import join, splitext, exists, isfile
 from collections import Counter
 
+from polib import pofile, POFile
+
 # The following chars groups are from docutils:
 closing_delimiters = "\\\\.,;!?"
 delimiters = (
@@ -209,7 +211,7 @@ def is_in_a_table(error, line):
     return "|" in line[: error.start()] and "|" in line[error.end() :]
 
 
-@checker(".rst", severity=2)
+@checker(".rst", ".po", severity=2)
 def check_suspicious_constructs(file, lines):
     """Check for suspicious reST constructs."""
     for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
@@ -332,7 +334,7 @@ def type_of_explicit_markup(line):
     return "comment"
 
 
-@checker(".rst", severity=2)
+@checker(".rst", ".po", severity=2)
 def check_missing_surrogate_space_on_plural(file, lines):
     r"""Check for missing 'backslash-space' between a code sample a letter.
 
@@ -428,22 +430,37 @@ def walk(path, ignore_list):
                 continue
             yield file if file[:2] != "./" else file[2:]
 
-
-def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
+def check(filename, content, allow_false_positives=False, severity=1, disabled=()):
     errors = Counter()
     ext = splitext(filename)[1]
-    lines = text.splitlines(keepends=True)
     for checker in checkers[ext]:
         if checker.falsepositives and not allow_false_positives:
             continue
         csev = checker.severity
         if csev >= severity:
-            for lno, msg in checker(filename, lines):
+            if ext == ".po":
+                assert isinstance(content, POFile)
+                def find_issues():
+                    # Let's not bother user with problems in fuzzy entries.
+                    for entry in content.translated_entries():
+                        # Don't check original msgid, assume it's checked directly.
+                        lines = entry.msgstr.splitlines(keepends=True)
+                        for lno, msg in checker(filename, lines):
+                            # Line numbers as computed for .rst files are not meaningful in
+                            # po files because several lines in the po files can make for just
+                            # one line in the rst paragraph, so just yield the entry's linenum,
+                            # sparing checkers the need to care about this.
+                            yield entry.linenum, msg
+            else:
+                assert isinstance(content, str)
+                def find_issues():
+                    lines = content.splitlines(keepends=True)
+                    yield from checker(filename, lines)
+            for lno, msg in find_issues():
                 if not is_disabled(msg, disabled):
                     print("[%d] %s:%d: %s" % (csev, filename, lno, msg))
                     errors[csev] += 1
     return errors
-
 
 def main(argv=None):
     args = parse_args(argv)
@@ -462,14 +479,19 @@ def main(argv=None):
             print("Checking %s..." % file)
 
         try:
-            with open(file, "r", encoding="utf-8") as f:
-                text = f.read()
+            if ext == ".po":
+                content = pofile(file)
+            else:
+                with open(file, "r", encoding="utf-8") as f:
+                    content = f.read()
+        # For po files, this is raised both for a file that can't
+        # be read and a file that isn't a valid po file.
         except OSError as err:
-            print("%s: cannot open: %s" % (file, err))
+            print("%s: cannot read: %s" % (file, err))
             count[4] += 1
             continue
 
-        count.update(check(file, text, args.false_pos, args.severity, args.disabled))
+        count.update(check(file, content, args.false_pos, args.severity, args.disabled))
 
     if args.verbose:
         print()
