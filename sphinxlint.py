@@ -230,7 +230,7 @@ def check_suspicious_constructs(file, lines):
         if error and not is_in_a_table(error, line):
             yield lno, f"role missing surrogate escape before plural: {error.group(0)!r}"
         elif default_role_re.search(line):
-            yield lno, "default role used"
+            yield lno, "default role used (hint: for inline code, use double backticks)"
 
 
 @checker(".py", ".rst")
