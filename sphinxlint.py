@@ -125,18 +125,11 @@ three_dot_directive_re = re.compile(r"\.\.\. %s::" % all_directives)
 # :const:`None`
 double_backtick_role = re.compile(r"(?<!``)%s``" % role_head)
 
-# Find inline literals glued to somthing else, like:
-# ``Point``s
-# instead of:
-# ``Point``\ s
 start_string_prefix = "(^|(?<=\\s|[%s%s|]))" % (openers, delimiters)
 end_string_suffix = "($|(?=\\s|[\x00%s%s%s|]))" % (
     closing_delimiters,
     delimiters,
     closers,
-)
-glued_inline_literals = re.compile(
-    r"(?<!{})``(?!{})".format(start_string_prefix, end_string_suffix)
 )
 
 # Find role glued with another word like:
@@ -332,6 +325,11 @@ def type_of_explicit_markup(line):
     return "comment"
 
 
+
+glued_inline_literals = re.compile(
+    r"{}(``[^`]+?(?!{})``)(?!{})".format(start_string_prefix, start_string_prefix, end_string_suffix)
+)
+
 @checker(".rst", severity=2)
 def check_missing_surrogate_space_on_plural(file, lines):
     r"""Check for missing 'backslash-space' between a code sample a letter.
@@ -342,7 +340,25 @@ def check_missing_surrogate_space_on_plural(file, lines):
     for lno, line in enumerate(hide_non_rst_blocks(lines)):
         match = glued_inline_literals.search(line)
         if match and match.start() != 0:
-            yield lno + 1, f"Missing backslash-space between literal and text (column {match.start()!r})."
+            literal = match.group(2)
+            yield lno + 1, f"Missing backslash-space between literal {literal} (column {match.start()!r})."
+
+
+triple_backticks = re.compile(
+    r"(?:{})```[^`]+?(?<!{})```(?:{})".format(start_string_prefix, start_string_prefix, end_string_suffix)
+)
+
+@checker(".rst", severity=2)
+def check_triple_backticks(file, lines):
+    f"""Check for triple backticks.
+
+    Good: ``Point``
+    Bad: ```Point```
+    """
+    for lno, line in enumerate(hide_non_rst_blocks(lines)):
+        match = triple_backticks.search(line)
+        if match:
+            yield lno + 1, f"There's no rst syntax using triple backticks"
 
 
 @checker(".rst", severity=1)
@@ -466,6 +482,10 @@ def main(argv=None):
                 text = f.read()
         except OSError as err:
             print("%s: cannot open: %s" % (file, err))
+            count[4] += 1
+            continue
+        except UnicodeDecodeError as err:
+            print("%s: cannot decode as UTF-8: %s" % (file, err))
             count[4] += 1
             continue
 
