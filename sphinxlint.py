@@ -206,10 +206,15 @@ def is_in_a_table(error, line):
     return "|" in line[: error.start()] and "|" in line[error.end() :]
 
 
+backtick_in_front_of_role = re.compile(r"(^|\s)`:{}:`{}`".format(simplename, role_body))
+
+
 @checker(".rst", severity=2)
 def check_suspicious_constructs(file, lines):
     """Check for suspicious reST constructs."""
     for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
+        if backtick_in_front_of_role.search(line):
+            yield lno, "superfluous backtick in front of role"
         if seems_directive_re.search(line):
             yield lno, "comment seems to be intended as a directive"
         if three_dot_directive_re.search(line):
@@ -321,7 +326,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
 
 
 def type_of_explicit_markup(line):
-    if re.match(fr"\.\. {all_directives}::", line):
+    if re.match(rf"\.\. {all_directives}::", line):
         return "directive"
     if re.match(r"\.\. \[[0-9]+\] ", line):
         return "footnote"
@@ -334,10 +339,12 @@ def type_of_explicit_markup(line):
     return "comment"
 
 
-
 glued_inline_literals = re.compile(
-    r"{}(``[^`]+?(?!{})``)(?!{})".format(start_string_prefix, start_string_prefix, end_string_suffix)
+    r"{}(``[^`]+?(?!{})``)(?!{})".format(
+        start_string_prefix, start_string_prefix, end_string_suffix
+    )
 )
+
 
 @checker(".rst", severity=2)
 def check_missing_surrogate_space_on_plural(file, lines):
@@ -354,8 +361,11 @@ def check_missing_surrogate_space_on_plural(file, lines):
 
 
 triple_backticks = re.compile(
-    r"(?:{})```[^`]+?(?<!{})```(?:{})".format(start_string_prefix, start_string_prefix, end_string_suffix)
+    r"(?:{})```[^`]+?(?<!{})```(?:{})".format(
+        start_string_prefix, start_string_prefix, end_string_suffix
+    )
 )
+
 
 @checker(".rst", severity=2)
 def check_triple_backticks(file, lines):
