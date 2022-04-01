@@ -21,6 +21,8 @@ import argparse
 from string import ascii_letters
 from os.path import join, splitext, exists, isfile
 from collections import Counter
+from itertools import chain
+
 
 # The following chars groups are from docutils:
 closing_delimiters = "\\\\.,;!?"
@@ -434,7 +436,7 @@ def parse_args(argv=None):
         help="disable given checks",
         default=[],
     )
-    parser.add_argument("path", default=".", nargs="?")
+    parser.add_argument("paths", default=".", nargs="*")
     args = parser.parse_args(argv[1:])
     return args
 
@@ -482,13 +484,15 @@ def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
 
 def main(argv=None):
     args = parse_args(argv)
-    if not exists(args.path):
-        print(f"Error: path {args.path} does not exist")
-        return 2
+
+    for path in args.paths:
+        if not exists(path):
+            print(f"Error: path {path} does not exist")
+            return 2
 
     count = Counter()
 
-    for file in walk(args.path, args.ignore):
+    for file in chain.from_iterable(walk(path, args.ignore) for path in args.paths):
         ext = splitext(file)[1]
         if ext not in checkers:
             continue
