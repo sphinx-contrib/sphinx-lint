@@ -1,0 +1,7 @@
+- id: sphinx-lint
+  name: Sphinx lint
+  description: 'Searches for common typos in sphinx-flavord rst files.'
+  files: '\.rst$'
+  entry: sphinx-lint
+  language: python
+
