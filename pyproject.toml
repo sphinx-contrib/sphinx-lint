@@ -1,3 +1,34 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "sphinx-lint"
+description = "Check for stylistic and formal issues in .rst and .py files included in the documentation."
+readme = "README.md"
+license = {text = "MIT License"}
+authors = [
+    {name = "Georg Brandl", email = "georg@python.org"},
+    {name = "Julien Palard", email = "julien@palard.fr"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Documentation :: Sphinx",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Python Software Foundation License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">= 3.7"
+dynamic = ["version"]
+
+[project.urls]
+repository = "https://github.com/sphinx-contrib/sphinx-lint"
+
+[project.scripts]
+sphinx-lint = "sphinxlint:main"
+
+[tool.setuptools]
+py-modules = ["sphinxlint"]
+include-package-data = false
+dynamic.version.attr = "sphinxlint.__version__"
