@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Check for stylistic and formal issues in .rst and .py
 # files included in the documentation.
@@ -105,7 +104,7 @@ directives = [
 all_directives = "(" + "|".join(directives) + ")"
 before_role = r"(^|(?<=[\s(/'{\[*-]))"
 simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
-role_head = r"({}:{}:)".format(before_role, simplename)  # A role, with a clean start
+role_head = fr"({before_role}:{simplename}:)"  # A role, with a clean start
 
 # Find comments that look like a directive, like:
 # .. versionchanged 3.6
@@ -127,8 +126,8 @@ three_dot_directive_re = re.compile(r"\.\.\. %s::" % all_directives)
 # :const:`None`
 double_backtick_role = re.compile(r"(?<!``)%s``" % role_head)
 
-start_string_prefix = "(^|(?<=\\s|[%s%s|]))" % (openers, delimiters)
-end_string_suffix = "($|(?=\\s|[\x00%s%s%s|]))" % (
+start_string_prefix = "(^|(?<=\\s|[{}{}|]))".format(openers, delimiters)
+end_string_suffix = "($|(?=\\s|[\x00{}{}{}|]))".format(
     closing_delimiters,
     delimiters,
     closers,
@@ -143,16 +142,16 @@ end_string_suffix = "($|(?=\\s|[\x00%s%s%s|]))" % (
 #     issue:`123`
 # instead of:
 #     :issue:`123`
-role_glued_with_word = re.compile(r"(^|\s)(?!:){}:`(?!`)".format(simplename))
+role_glued_with_word = re.compile(fr"(^|\s)(?!:){simplename}:`(?!`)")
 
 
 role_with_no_backticks = re.compile(
-    r"(^|\s):{}:(?![`:])[^\s`]+(\s|$)".format(simplename)
+    fr"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)"
 )
 
 # Find role missing middle column, like:
 #    The :issue`123` is ...
-role_missing_right_column = re.compile(r"(^|\s):{}`(?!`)".format(simplename))
+role_missing_right_column = re.compile(fr"(^|\s):{simplename}`(?!`)")
 
 # Find role glued with a plural mark or something like:
 #    The :exc:`Exception`s
@@ -160,7 +159,7 @@ role_missing_right_column = re.compile(r"(^|\s):{}`(?!`)".format(simplename))
 #    The :exc:`Exceptions`\ s
 role_body = r"([^`]|\s`+|\\`)+"
 role_missing_surrogate_escape = re.compile(
-    r"{}`{}(?<![\\\s`])`(?!{})".format(role_head, role_body, end_string_suffix)
+    fr"{role_head}`{role_body}(?<![\\\s`])`(?!{end_string_suffix})"
 )
 
 # TODO: cover more cases
@@ -208,7 +207,7 @@ def is_in_a_table(error, line):
     return "|" in line[: error.start()] and "|" in line[error.end() :]
 
 
-backtick_in_front_of_role = re.compile(r"(^|\s)`:{}:`{}`".format(simplename, role_body))
+backtick_in_front_of_role = re.compile(fr"(^|\s)`:{simplename}:`{role_body}`")
 
 
 @checker(".rst", severity=2)
@@ -394,8 +393,7 @@ def check_bad_dedent_in_block(file, lines):
                 errors.append((block_lineno + lineno, "Bad dedent in block"))
 
     list(hide_non_rst_blocks(lines, hidden_block_cb=check_block))
-    for error in errors:
-        yield error
+    yield from errors
 
 
 def parse_args(argv=None):
@@ -501,14 +499,14 @@ def main(argv=None):
             print("Checking %s..." % file)
 
         try:
-            with open(file, "r", encoding="utf-8") as f:
+            with open(file, encoding="utf-8") as f:
                 text = f.read()
         except OSError as err:
-            print("%s: cannot open: %s" % (file, err))
+            print("{}: cannot open: {}".format(file, err))
             count[4] += 1
             continue
         except UnicodeDecodeError as err:
-            print("%s: cannot decode as UTF-8: %s" % (file, err))
+            print("{}: cannot decode as UTF-8: {}".format(file, err))
             count[4] += 1
             continue
 
