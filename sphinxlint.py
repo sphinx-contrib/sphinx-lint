@@ -107,7 +107,7 @@ before_role = r"(^|(?<=[\s(/'{\[*-]))"
 simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
 role_head = r"({}:{}:)".format(before_role, simplename)  # A role, with a clean start
 
-# Find comments that looks like a directive, like:
+# Find comments that look like a directive, like:
 # .. versionchanged 3.6
 # or
 # .. versionchanged: 3.6
@@ -412,7 +412,7 @@ def parse_args(argv=None):
         "-f",
         dest="false_pos",
         action="store_true",
-        help="enable checked that yield many false positives",
+        help="enable checkers that yield many false positives",
     )
     parser.add_argument(
         "-s",
@@ -425,7 +425,7 @@ def parse_args(argv=None):
         "-i",
         "--ignore",
         action="append",
-        help="ignore subdire or file path",
+        help="ignore subdir or file path",
         default=[],
     )
     parser.add_argument(
@@ -448,7 +448,7 @@ def is_disabled(msg, disabled_messages):
 def walk(path, ignore_list):
     """Wrapper around os.walk with an ignore list.
 
-    It also allow giving a file, thus yielding just that file.
+    It also allows giving a file, thus yielding just that file.
     """
     if isfile(path):
         yield path if path[:2] != "./" else path[2:]
