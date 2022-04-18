@@ -112,26 +112,22 @@ role_head = fr"({before_role}:{simplename}:)"  # A role, with a clean start
 # .. versionchanged: 3.6
 # as it should be:
 # .. versionchanged:: 3.6
-seems_directive_re = re.compile(r"(?<!\.)\.\. %s([^a-z:]|:(?!:))" % all_directives)
+seems_directive_re = re.compile(rf"(?<!\.)\.\. {all_directives}([^a-z:]|:(?!:))")
 
 # Find directive prefixed with three dots instead of two, like:
 # ... versionchanged:: 3.6
 # instead of:
 # .. versionchanged:: 3.6
-three_dot_directive_re = re.compile(r"\.\.\. %s::" % all_directives)
+three_dot_directive_re = re.compile(rf"\.\.\. {all_directives}::")
 
 # Find role used with double backticks instead of simple backticks like:
 # :const:``None``
 # instead of:
 # :const:`None`
-double_backtick_role = re.compile(r"(?<!``)%s``" % role_head)
+double_backtick_role = re.compile(rf"(?<!``){role_head}``")
 
-start_string_prefix = "(^|(?<=\\s|[{}{}|]))".format(openers, delimiters)
-end_string_suffix = "($|(?=\\s|[\x00{}{}{}|]))".format(
-    closing_delimiters,
-    delimiters,
-    closers,
-)
+start_string_prefix = f"(^|(?<=\\s|[{openers}{delimiters}|]))"
+end_string_suffix = f"($|(?=\\s|[\x00{closing_delimiters}{delimiters}{closers}|]))"
 
 # Find role glued with another word like:
 #     the:c:func:`PyThreadState_LeaveTracing` function.
@@ -200,7 +196,7 @@ def check_syntax(file, lines):
     try:
         compile(code, file, "exec")
     except SyntaxError as err:
-        yield err.lineno, "not compilable: %s" % err
+        yield err.lineno, f"not compilable: {err}"
 
 
 def is_in_a_table(error, line):
@@ -280,7 +276,7 @@ def check_leaked_markup(file, lines):
     """
     for lno, line in enumerate(lines):
         if leaked_markup_re.search(line):
-            yield lno + 1, "possibly leaked markup: %r" % line
+            yield lno + 1, f"possibly leaked markup: {line}"
 
 
 def is_multiline_non_rst_block(line):
@@ -341,9 +337,7 @@ def type_of_explicit_markup(line):
 
 
 glued_inline_literals = re.compile(
-    r"{}(``[^`]+?(?!{})``)(?!{})".format(
-        start_string_prefix, start_string_prefix, end_string_suffix
-    )
+    rf"{start_string_prefix}(``[^`]+?(?!{start_string_prefix})``)(?!{end_string_suffix})"
 )
 
 
@@ -362,9 +356,7 @@ def check_missing_surrogate_space_on_plural(file, lines):
 
 
 triple_backticks = re.compile(
-    r"(?:{})```[^`]+?(?<!{})```(?:{})".format(
-        start_string_prefix, start_string_prefix, end_string_suffix
-    )
+    rf"(?:{start_string_prefix})```[^`]+?(?<!{start_string_prefix})```(?:{end_string_suffix})"
 )
 
 
@@ -475,7 +467,7 @@ def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
         if csev >= severity:
             for lno, msg in checker(filename, lines):
                 if not is_disabled(msg, disabled):
-                    print("[%d] %s:%d: %s" % (csev, filename, lno, msg))
+                    print(f"[{csev}] {filename}:{lno}: {msg}")
                     errors[csev] += 1
     return errors
 
@@ -496,17 +488,17 @@ def main(argv=None):
             continue
 
         if args.verbose:
-            print("Checking %s..." % file)
+            print(f"Checking {file}...")
 
         try:
             with open(file, encoding="utf-8") as f:
                 text = f.read()
         except OSError as err:
-            print("{}: cannot open: {}".format(file, err))
+            print(f"{file}: cannot open: {err}")
             count[4] += 1
             continue
         except UnicodeDecodeError as err:
-            print("{}: cannot decode as UTF-8: {}".format(file, err))
+            print(f"{file}: cannot decode as UTF-8: {err}")
             count[4] += 1
             continue
 
@@ -516,16 +508,14 @@ def main(argv=None):
         print()
     if not count:
         if args.severity > 1:
-            print("No problems with severity >= %d found." % args.severity)
+            print(f"No problems with severity >= {args.severity} found.")
         else:
             print("No problems found.")
     else:
         for severity in sorted(count):
             number = count[severity]
-            print(
-                "%d problem%s with severity %d found."
-                % (number, number > 1 and "s" or "", severity)
-            )
+            s = number > 1 and "s" or ""
+            print(f"{number} problem{s} with severity {severity} found.")
     sys.exit(int(bool(count)))
 
 
