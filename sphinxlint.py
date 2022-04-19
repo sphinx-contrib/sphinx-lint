@@ -514,7 +514,7 @@ def main(argv=None):
     else:
         for severity in sorted(count):
             number = count[severity]
-            s = number > 1 and "s" or ""
+            s = "s" if number > 1 else ""
             print(f"{number} problem{s} with severity {severity} found.")
     sys.exit(int(bool(count)))
 
