@@ -208,6 +208,32 @@ def is_in_a_table(error, line):
     return "|" in line[: error.start()] and "|" in line[error.end() :]
 
 
+role_missing_closing_backtick = re.compile(rf"({role_head}`{role_body})[^`]*$")
+
+
+def check_paragraph(paragraph_lno, paragraph):
+    error = role_missing_closing_backtick.search(paragraph)
+    if error and not "|" in paragraph:
+        error_offset = paragraph[: error.start()].count("\n")
+        yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
+
+
+@checker(".rst", severity=2)
+def check_suspicious_constructs_in_paragraphs(file, lines):
+    """Check for suspicious reST constructs at paragraph level."""
+    paragraph = []
+    paragraph_lno = 1
+    for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
+        if line != "\n":
+            paragraph.append(line)
+        elif paragraph:
+            yield from check_paragraph(paragraph_lno, "".join(paragraph))
+            paragraph = []
+            paragraph_lno = lno
+    if paragraph:
+        yield from check_paragraph(paragraph_lno, "".join(paragraph))
+
+
 backtick_in_front_of_role = re.compile(r"(^|\s)`:{}:`{}`".format(simplename, role_body))
 
 
