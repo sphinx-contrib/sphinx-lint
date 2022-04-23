@@ -159,7 +159,7 @@ role_missing_surrogate_escape = re.compile(
 # https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#toc-entry-44
 default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
 
-seems_hyperlink_re = re.compile(r"`[^`]*?(\s?)<https?://[^`]+>`(_?)")
+seems_hyperlink_re = re.compile(r"`[^`]+?(\s?)<https?://[^`]+>`(_?)")
 
 leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 
