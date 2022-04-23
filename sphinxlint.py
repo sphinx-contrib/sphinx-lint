@@ -204,8 +204,10 @@ role_missing_closing_backtick = re.compile(rf"({role_head}`[^`]+?)[^`]*$")
 
 
 def check_paragraph(paragraph_lno, paragraph):
+    if paragraph.count("|") > 4:
+        return  # we don't handle tables yet.
     error = role_missing_closing_backtick.search(paragraph)
-    if error and not "|" in paragraph:
+    if error:
         error_offset = paragraph[: error.start()].count("\n")
         yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
     paragraph_without_roles = re.sub(normal_role, "", paragraph).replace("````", "")
