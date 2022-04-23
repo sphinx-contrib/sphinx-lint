@@ -151,9 +151,8 @@ role_missing_right_column = re.compile(rf"(^|\s):{simplename}`(?!`)")
 #    The :exc:`Exception`s
 # instead of:
 #    The :exc:`Exceptions`\ s
-role_body = r"([^`]|\s`+|\\`)+"
 role_missing_surrogate_escape = re.compile(
-    rf"{role_head}`{role_body}(?<![\\\s`])`(?!{end_string_suffix})"
+    rf"{role_head}`[^`]+?(?<![\\\s`])`(?!{end_string_suffix})"
 )
 
 # TODO: cover more cases
@@ -201,7 +200,7 @@ def is_in_a_table(error, line):
     return "|" in line[: error.start()] and "|" in line[error.end() :]
 
 
-role_missing_closing_backtick = re.compile(rf"({role_head}`{role_body})[^`]*$")
+role_missing_closing_backtick = re.compile(rf"({role_head}`[^`]+?)[^`]*$")
 
 
 def check_paragraph(paragraph_lno, paragraph):
@@ -231,6 +230,7 @@ def check_suspicious_constructs_in_paragraphs(file, lines):
         yield from check_paragraph(paragraph_lno, "".join(paragraph))
 
 
+role_body = r"([^`]|\s`+|\\`)+"
 backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
 
@@ -368,25 +368,6 @@ def type_of_explicit_markup(line):
     if re.match(r"\.\. \|[^\|]*\| ", line):
         return "substitution_definition"
     return "comment"
-
-
-glued_inline_literals = re.compile(
-    rf"{start_string_prefix}(``[^`]+?(?!{start_string_prefix})``)(?!{end_string_suffix})"
-)
-
-
-@checker(".rst", severity=2)
-def check_missing_surrogate_space_on_plural(file, lines):
-    r"""Check for missing 'backslash-space' between a code sample a letter.
-
-    Good: ``Point``\ s
-    Bad: ``Point``s
-    """
-    for lno, line in enumerate(hide_non_rst_blocks(lines)):
-        match = glued_inline_literals.search(line)
-        if match and match.start() != 0:
-            literal = match.group(2)
-            yield lno + 1, f"Missing backslash-space between literal {literal} (column {match.start()!r})."
 
 
 triple_backticks = re.compile(
