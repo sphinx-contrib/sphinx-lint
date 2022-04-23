@@ -1,4 +1,3 @@
-import pytest
 from sphinxlint import check
 
 

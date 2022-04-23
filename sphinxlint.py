@@ -234,6 +234,14 @@ def check_suspicious_constructs_in_paragraphs(file, lines):
 backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
 
+@checker(".rst", severity=0)
+def check_default_role(file, lines):
+    """Check for default roles."""
+    for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
+        if default_role_re.search(line):
+            yield lno, "default role used (hint: for inline code, use double backticks)"
+
+
 @checker(".rst", severity=2)
 def check_suspicious_constructs(file, lines):
     """Check for suspicious reST constructs."""
@@ -261,8 +269,6 @@ def check_suspicious_constructs(file, lines):
         error = role_missing_surrogate_escape.search(line)
         if error and not is_in_a_table(error, line):
             yield lno, f"role missing surrogate escape before plural: {error.group(0)!r}"
-        if default_role_re.search(line):
-            yield lno, "default role used (hint: for inline code, use double backticks)"
 
 
 @checker(".py", ".rst")

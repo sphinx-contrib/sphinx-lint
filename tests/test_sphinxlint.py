@@ -10,7 +10,7 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 @pytest.mark.parametrize("file", [str(f) for f in (FIXTURE_DIR / "xpass").glob("*.*")])
 def test_sphinxlint_shall_pass(file, capsys):
     try:
-        main(["sphinxlint.py", str(file)])
+        main(["sphinxlint.py", "--severity=0", str(file)])
     except SystemExit as err:
         error_count = err.code
     out, err = capsys.readouterr()
@@ -22,7 +22,7 @@ def test_sphinxlint_shall_pass(file, capsys):
 @pytest.mark.parametrize("file", [str(f) for f in (FIXTURE_DIR / "xfail").glob("*.*")])
 def test_sphinxlint_shall_not_pass(file, capsys):
     try:
-        main(["sphinxlint.py", str(file)])
+        main(["sphinxlint.py", "--severity=0", str(file)])
     except SystemExit as err:
         error_count = err.code
     out, err = capsys.readouterr()
