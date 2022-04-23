@@ -208,7 +208,8 @@ def check_paragraph(paragraph_lno, paragraph):
     if error and not "|" in paragraph:
         error_offset = paragraph[: error.start()].count("\n")
         yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
-    for role in re.finditer("``[^`]+``.", paragraph, flags=re.DOTALL):
+    paragraph_without_roles = re.sub(normal_role, "", paragraph).replace("````", "")
+    for role in re.finditer("``.+?``(?!`).", paragraph_without_roles, flags=re.DOTALL):
         if not re.match(end_string_suffix, role.group(0)[-1]):
             error_offset = paragraph[: role.start()].count("\n")
             yield paragraph_lno + error_offset, f"code sample missing surrogate space before plural: {role.group(0)!r}"
@@ -231,6 +232,7 @@ def check_suspicious_constructs_in_paragraphs(file, lines):
 
 
 role_body = r"([^`]|\s`+|\\`)+"
+normal_role = f":{simplename}:`{role_body}`"
 backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
 
