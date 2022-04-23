@@ -104,7 +104,7 @@ directives = [
 all_directives = "(" + "|".join(directives) + ")"
 before_role = r"(^|(?<=[\s(/'{\[*-]))"
 simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
-role_head = fr"({before_role}:{simplename}:)"  # A role, with a clean start
+role_head = rf"({before_role}:{simplename}:)"  # A role, with a clean start
 
 # Find comments that look like a directive, like:
 # .. versionchanged 3.6
@@ -138,16 +138,14 @@ end_string_suffix = f"($|(?=\\s|[\x00{closing_delimiters}{delimiters}{closers}|]
 #     issue:`123`
 # instead of:
 #     :issue:`123`
-role_glued_with_word = re.compile(fr"(^|\s)(?!:){simplename}:`(?!`)")
+role_glued_with_word = re.compile(rf"(^|\s)(?!:){simplename}:`(?!`)")
 
 
-role_with_no_backticks = re.compile(
-    fr"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)"
-)
+role_with_no_backticks = re.compile(rf"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)")
 
 # Find role missing middle column, like:
 #    The :issue`123` is ...
-role_missing_right_column = re.compile(fr"(^|\s):{simplename}`(?!`)")
+role_missing_right_column = re.compile(rf"(^|\s):{simplename}`(?!`)")
 
 # Find role glued with a plural mark or something like:
 #    The :exc:`Exception`s
@@ -155,7 +153,7 @@ role_missing_right_column = re.compile(fr"(^|\s):{simplename}`(?!`)")
 #    The :exc:`Exceptions`\ s
 role_body = r"([^`]|\s`+|\\`)+"
 role_missing_surrogate_escape = re.compile(
-    fr"{role_head}`{role_body}(?<![\\\s`])`(?!{end_string_suffix})"
+    rf"{role_head}`{role_body}(?<![\\\s`])`(?!{end_string_suffix})"
 )
 
 # TODO: cover more cases
@@ -211,6 +209,10 @@ def check_paragraph(paragraph_lno, paragraph):
     if error and not "|" in paragraph:
         error_offset = paragraph[: error.start()].count("\n")
         yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
+    for role in re.finditer("``[^`]+``.", paragraph, flags=re.DOTALL):
+        if not re.match(end_string_suffix, role.group(0)[-1]):
+            error_offset = paragraph[: role.start()].count("\n")
+            yield paragraph_lno + error_offset, f"code sample missing surrogate space before plural: {role.group(0)!r}"
 
 
 @checker(".rst", severity=2)
@@ -229,7 +231,7 @@ def check_suspicious_constructs_in_paragraphs(file, lines):
         yield from check_paragraph(paragraph_lno, "".join(paragraph))
 
 
-backtick_in_front_of_role = re.compile(fr"(^|\s)`:{simplename}:`{role_body}`")
+backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
 
 @checker(".rst", severity=2)
@@ -259,7 +261,7 @@ def check_suspicious_constructs(file, lines):
         error = role_missing_surrogate_escape.search(line)
         if error and not is_in_a_table(error, line):
             yield lno, f"role missing surrogate escape before plural: {error.group(0)!r}"
-        elif default_role_re.search(line):
+        if default_role_re.search(line):
             yield lno, "default role used (hint: for inline code, use double backticks)"
 
 
