@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Check for stylistic and formal issues in .rst and .py
 # files included in the documentation.
@@ -105,34 +104,30 @@ directives = [
 all_directives = "(" + "|".join(directives) + ")"
 before_role = r"(^|(?<=[\s(/'{\[*-]))"
 simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
-role_head = r"({}:{}:)".format(before_role, simplename)  # A role, with a clean start
+role_head = fr"({before_role}:{simplename}:)"  # A role, with a clean start
 
-# Find comments that looks like a directive, like:
+# Find comments that look like a directive, like:
 # .. versionchanged 3.6
 # or
 # .. versionchanged: 3.6
 # as it should be:
 # .. versionchanged:: 3.6
-seems_directive_re = re.compile(r"(?<!\.)\.\. %s([^a-z:]|:(?!:))" % all_directives)
+seems_directive_re = re.compile(rf"(?<!\.)\.\. {all_directives}([^a-z:]|:(?!:))")
 
 # Find directive prefixed with three dots instead of two, like:
 # ... versionchanged:: 3.6
 # instead of:
 # .. versionchanged:: 3.6
-three_dot_directive_re = re.compile(r"\.\.\. %s::" % all_directives)
+three_dot_directive_re = re.compile(rf"\.\.\. {all_directives}::")
 
 # Find role used with double backticks instead of simple backticks like:
 # :const:``None``
 # instead of:
 # :const:`None`
-double_backtick_role = re.compile(r"(?<!``)%s``" % role_head)
+double_backtick_role = re.compile(rf"(?<!``){role_head}``")
 
-start_string_prefix = "(^|(?<=\\s|[%s%s|]))" % (openers, delimiters)
-end_string_suffix = "($|(?=\\s|[\x00%s%s%s|]))" % (
-    closing_delimiters,
-    delimiters,
-    closers,
-)
+start_string_prefix = f"(^|(?<=\\s|[{openers}{delimiters}|]))"
+end_string_suffix = f"($|(?=\\s|[\x00{closing_delimiters}{delimiters}{closers}|]))"
 
 # Find role glued with another word like:
 #     the:c:func:`PyThreadState_LeaveTracing` function.
@@ -143,16 +138,16 @@ end_string_suffix = "($|(?=\\s|[\x00%s%s%s|]))" % (
 #     issue:`123`
 # instead of:
 #     :issue:`123`
-role_glued_with_word = re.compile(r"(^|\s)(?!:){}:`(?!`)".format(simplename))
+role_glued_with_word = re.compile(fr"(^|\s)(?!:){simplename}:`(?!`)")
 
 
 role_with_no_backticks = re.compile(
-    r"(^|\s):{}:(?![`:])[^\s`]+(\s|$)".format(simplename)
+    fr"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)"
 )
 
 # Find role missing middle column, like:
 #    The :issue`123` is ...
-role_missing_right_column = re.compile(r"(^|\s):{}`(?!`)".format(simplename))
+role_missing_right_column = re.compile(fr"(^|\s):{simplename}`(?!`)")
 
 # Find role glued with a plural mark or something like:
 #    The :exc:`Exception`s
@@ -160,7 +155,7 @@ role_missing_right_column = re.compile(r"(^|\s):{}`(?!`)".format(simplename))
 #    The :exc:`Exceptions`\ s
 role_body = r"([^`]|\s`+|\\`)+"
 role_missing_surrogate_escape = re.compile(
-    r"{}`{}(?<![\\\s`])`(?!{})".format(role_head, role_body, end_string_suffix)
+    fr"{role_head}`{role_body}(?<![\\\s`])`(?!{end_string_suffix})"
 )
 
 # TODO: cover more cases
@@ -201,7 +196,7 @@ def check_syntax(file, lines):
     try:
         compile(code, file, "exec")
     except SyntaxError as err:
-        yield err.lineno, "not compilable: %s" % err
+        yield err.lineno, f"not compilable: {err}"
 
 
 def is_in_a_table(error, line):
@@ -234,7 +229,7 @@ def check_suspicious_constructs_in_paragraphs(file, lines):
         yield from check_paragraph(paragraph_lno, "".join(paragraph))
 
 
-backtick_in_front_of_role = re.compile(r"(^|\s)`:{}:`{}`".format(simplename, role_body))
+backtick_in_front_of_role = re.compile(fr"(^|\s)`:{simplename}:`{role_body}`")
 
 
 @checker(".rst", severity=2)
@@ -307,7 +302,7 @@ def check_leaked_markup(file, lines):
     """
     for lno, line in enumerate(lines):
         if leaked_markup_re.search(line):
-            yield lno + 1, "possibly leaked markup: %r" % line
+            yield lno + 1, f"possibly leaked markup: {line}"
 
 
 def is_multiline_non_rst_block(line):
@@ -368,9 +363,7 @@ def type_of_explicit_markup(line):
 
 
 glued_inline_literals = re.compile(
-    r"{}(``[^`]+?(?!{})``)(?!{})".format(
-        start_string_prefix, start_string_prefix, end_string_suffix
-    )
+    rf"{start_string_prefix}(``[^`]+?(?!{start_string_prefix})``)(?!{end_string_suffix})"
 )
 
 
@@ -389,9 +382,7 @@ def check_missing_surrogate_space_on_plural(file, lines):
 
 
 triple_backticks = re.compile(
-    r"(?:{})```[^`]+?(?<!{})```(?:{})".format(
-        start_string_prefix, start_string_prefix, end_string_suffix
-    )
+    rf"(?:{start_string_prefix})```[^`]+?(?<!{start_string_prefix})```(?:{end_string_suffix})"
 )
 
 
@@ -420,8 +411,7 @@ def check_bad_dedent_in_block(file, lines):
                 errors.append((block_lineno + lineno, "Bad dedent in block"))
 
     list(hide_non_rst_blocks(lines, hidden_block_cb=check_block))
-    for error in errors:
-        yield error
+    yield from errors
 
 
 def parse_args(argv=None):
@@ -438,7 +428,7 @@ def parse_args(argv=None):
         "-f",
         dest="false_pos",
         action="store_true",
-        help="enable checked that yield many false positives",
+        help="enable checkers that yield many false positives",
     )
     parser.add_argument(
         "-s",
@@ -451,7 +441,7 @@ def parse_args(argv=None):
         "-i",
         "--ignore",
         action="append",
-        help="ignore subdire or file path",
+        help="ignore subdir or file path",
         default=[],
     )
     parser.add_argument(
@@ -474,7 +464,7 @@ def is_disabled(msg, disabled_messages):
 def walk(path, ignore_list):
     """Wrapper around os.walk with an ignore list.
 
-    It also allow giving a file, thus yielding just that file.
+    It also allows giving a file, thus yielding just that file.
     """
     if isfile(path):
         yield path if path[:2] != "./" else path[2:]
@@ -503,7 +493,7 @@ def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
         if csev >= severity:
             for lno, msg in checker(filename, lines):
                 if not is_disabled(msg, disabled):
-                    print("[%d] %s:%d: %s" % (csev, filename, lno, msg))
+                    print(f"[{csev}] {filename}:{lno}: {msg}")
                     errors[csev] += 1
     return errors
 
@@ -524,17 +514,17 @@ def main(argv=None):
             continue
 
         if args.verbose:
-            print("Checking %s..." % file)
+            print(f"Checking {file}...")
 
         try:
-            with open(file, "r", encoding="utf-8") as f:
+            with open(file, encoding="utf-8") as f:
                 text = f.read()
         except OSError as err:
-            print("%s: cannot open: %s" % (file, err))
+            print(f"{file}: cannot open: {err}")
             count[4] += 1
             continue
         except UnicodeDecodeError as err:
-            print("%s: cannot decode as UTF-8: %s" % (file, err))
+            print(f"{file}: cannot decode as UTF-8: {err}")
             count[4] += 1
             continue
 
@@ -544,16 +534,14 @@ def main(argv=None):
         print()
     if not count:
         if args.severity > 1:
-            print("No problems with severity >= %d found." % args.severity)
+            print(f"No problems with severity >= {args.severity} found.")
         else:
             print("No problems found.")
     else:
         for severity in sorted(count):
             number = count[severity]
-            print(
-                "%d problem%s with severity %d found."
-                % (number, number > 1 and "s" or "", severity)
-            )
+            s = "s" if number > 1 else ""
+            print(f"{number} problem{s} with severity {severity} found.")
     sys.exit(int(bool(count)))
 
 

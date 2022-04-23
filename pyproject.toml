@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "sphinx-lint"
 description = "Check for stylistic and formal issues in .rst and .py files included in the documentation."
 readme = "README.md"
-license = {text = "MIT License"}
+license = {text = "PSF License"}
 authors = [
     {name = "Georg Brandl", email = "georg@python.org"},
     {name = "Julien Palard", email = "julien@palard.fr"},
