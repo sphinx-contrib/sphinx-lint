@@ -16,10 +16,12 @@ __version__ = "0.3"
 import os
 import re
 import sys
+from functools import partial, reduce
 import argparse
 from os.path import join, splitext, exists, isfile
 from collections import Counter
 from itertools import chain
+import multiprocessing
 
 
 # The following chars groups are from docutils:
@@ -513,16 +515,16 @@ def check_text(filename, text, allow_false_positives=False, severity=1, disabled
 def check_file(filename, allow_false_positives=False, severity=1, disabled=()):
     ext = splitext(filename)[1]
     if ext not in checkers:
-        return {}
+        return Counter()
     try:
         with open(filename, encoding="utf-8") as f:
             text = f.read()
     except OSError as err:
         print(f"{filename}: cannot open: {err}")
-        return {4: 1}
+        return Counter({4: 1})
     except UnicodeDecodeError as err:
         print(f"{filename}: cannot decode as UTF-8: {err}")
-        return {4: 1}
+        return Counter({4: 1})
     return check_text(filename, text, allow_false_positives, severity, disabled)
 
 
@@ -534,10 +536,17 @@ def main(argv=None):
             print(f"Error: path {path} does not exist")
             return 2
 
-    count = Counter()
-
-    for file in chain.from_iterable(walk(path, args.ignore) for path in args.paths):
-        count.update(check_file(file, args.false_pos, args.severity, args.disabled))
+    with multiprocessing.Pool() as pool:
+        results = pool.map(
+            partial(
+                check_file,
+                allow_false_positives=args.false_pos,
+                severity=args.severity,
+                disabled=args.disabled,
+            ),
+            chain.from_iterable(walk(path, args.ignore) for path in args.paths),
+        )
+    count = reduce(Counter.__add__, results)
 
     if args.verbose:
         print()
