@@ -34,6 +34,13 @@ as Sphinx Lint works line by line it will inevitably think the `:meth:` role is 
 To avoid false positives, some rules are skipped if we're in a table.
 
 
+## Releasing
+
+One should use the `populate-xpass.sh` script before running tests
+before releasing, to avoid creating a release introducing false
+positives.
+
+
 ## License
 
 As this script was in the CPython repository the license is the Python
