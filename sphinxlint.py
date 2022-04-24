@@ -490,7 +490,7 @@ def walk(path, ignore_list):
             yield file if file[:2] != "./" else file[2:]
 
 
-def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
+def check_text(filename, text, allow_false_positives=False, severity=1, disabled=()):
     errors = Counter()
     ext = splitext(filename)[1]
     lines = text.splitlines(keepends=True)
@@ -510,6 +510,22 @@ def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
     return errors
 
 
+def check_file(filename, allow_false_positives=False, severity=1, disabled=()):
+    ext = splitext(filename)[1]
+    if ext not in checkers:
+        return {}
+    try:
+        with open(filename, encoding="utf-8") as f:
+            text = f.read()
+    except OSError as err:
+        print(f"{filename}: cannot open: {err}")
+        return {4: 1}
+    except UnicodeDecodeError as err:
+        print(f"{filename}: cannot decode as UTF-8: {err}")
+        return {4: 1}
+    return check_text(filename, text, allow_false_positives, severity, disabled)
+
+
 def main(argv=None):
     args = parse_args(argv)
 
@@ -521,26 +537,7 @@ def main(argv=None):
     count = Counter()
 
     for file in chain.from_iterable(walk(path, args.ignore) for path in args.paths):
-        ext = splitext(file)[1]
-        if ext not in checkers:
-            continue
-
-        if args.verbose:
-            print(f"Checking {file}...")
-
-        try:
-            with open(file, encoding="utf-8") as f:
-                text = f.read()
-        except OSError as err:
-            print(f"{file}: cannot open: {err}")
-            count[4] += 1
-            continue
-        except UnicodeDecodeError as err:
-            print(f"{file}: cannot decode as UTF-8: {err}")
-            count[4] += 1
-            continue
-
-        count.update(check(file, text, args.false_pos, args.severity, args.disabled))
+        count.update(check_file(file, args.false_pos, args.severity, args.disabled))
 
     if args.verbose:
         print()
