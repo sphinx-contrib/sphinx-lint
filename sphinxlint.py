@@ -11,13 +11,12 @@
 """Sphinx rst linter.
 """
 
-__version__ = "0.2"
+__version__ = "0.3"
 
 import os
 import re
 import sys
 import argparse
-from string import ascii_letters
 from os.path import join, splitext, exists, isfile
 from collections import Counter
 from itertools import chain
