@@ -165,7 +165,7 @@ leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 
 checkers = {}
 
-checker_props = {"severity": 1, "falsepositives": False}
+checker_props = {"severity": 1, "falsepositives": False, "rst_only": True}
 
 
 def checker(*suffixes, **kwds):
@@ -181,7 +181,7 @@ def checker(*suffixes, **kwds):
     return deco
 
 
-@checker(".py", severity=4)
+@checker(".py", severity=4, rst_only=False)
 def check_syntax(file, lines):
     """Check Python examples for valid syntax."""
     code = "".join(lines)
@@ -221,7 +221,7 @@ def check_suspicious_constructs_in_paragraphs(file, lines):
     """Check for suspicious reST constructs at paragraph level."""
     paragraph = []
     paragraph_lno = 1
-    for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
+    for lno, line in enumerate(lines, start=1):
         if line != "\n":
             paragraph.append(line)
         elif paragraph:
@@ -240,21 +240,38 @@ backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 @checker(".rst", severity=0)
 def check_default_role(file, lines):
     """Check for default roles."""
-    for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
+    for lno, line in enumerate(lines, start=1):
         if default_role_re.search(line):
             yield lno, "default role used (hint: for inline code, use double backticks)"
 
 
 @checker(".rst", severity=2)
-def check_suspicious_constructs(file, lines):
-    """Check for suspicious reST constructs."""
-    for lno, line in enumerate(hide_non_rst_blocks(lines), start=1):
-        if backtick_in_front_of_role.search(line):
-            yield lno, "superfluous backtick in front of role"
+def check_directives(file, lines):
+    """Check for mis-constructed directives."""
+    for lno, line in enumerate(lines, start=1):
         if seems_directive_re.search(line):
             yield lno, "comment seems to be intended as a directive"
         if three_dot_directive_re.search(line):
             yield lno, "directive should start with two dots, not three."
+
+
+@checker(".rst", severity=2)
+def check_roles(file, lines):
+    """Check for suspicious role constructs."""
+    for lno, line in enumerate(lines, start=1):
+        no_backticks = role_with_no_backticks.search(line)
+        if no_backticks:
+            yield lno, f"role with no backticks: {no_backticks.group(0)!r}"
+
+
+@checker(".rst", severity=2)
+def check_suspicious_backticks_constructs(file, lines):
+    """Check for suspicious constructs with backticks."""
+    for lno, line in enumerate(lines, start=1):
+        if "`" not in line:
+            continue
+        if backtick_in_front_of_role.search(line):
+            yield lno, "superfluous backtick in front of role"
         for match in seems_hyperlink_re.finditer(line):
             if not match.group(1):
                 yield lno, "missing space before < in hyperlink"
@@ -264,9 +281,6 @@ def check_suspicious_constructs(file, lines):
             yield lno, "role use a single backtick, double backtick found."
         if role_glued_with_word.search(line):
             yield lno, "missing space before role"
-        no_backticks = role_with_no_backticks.search(line)
-        if no_backticks:
-            yield lno, f"role with no backticks: {no_backticks.group(0)!r}"
         if role_missing_right_column.search(line):
             yield lno, "role missing column before first backtick."
         error = role_missing_surrogate_escape.search(line)
@@ -274,7 +288,7 @@ def check_suspicious_constructs(file, lines):
             yield lno, f"role missing surrogate escape before plural: {error.group(0)!r}"
 
 
-@checker(".py", ".rst")
+@checker(".py", ".rst", rst_only=False)
 def check_whitespace(file, lines):
     """Check for whitespace and line length issues."""
     lno = line = None
@@ -290,7 +304,7 @@ def check_whitespace(file, lines):
             yield lno, "No newline at end of file (no-newline-at-end-of-file)."
 
 
-@checker(".rst", severity=0)
+@checker(".rst", severity=0, rst_only=False)
 def check_line_length(file, lines):
     """Check for line length; this checker is not run by default."""
     for lno, line in enumerate(lines):
@@ -306,7 +320,7 @@ def check_line_length(file, lines):
                 yield lno + 1, "line too long"
 
 
-@checker(".html", severity=2, falsepositives=True)
+@checker(".html", severity=2, falsepositives=True, rst_only=False)
 def check_leaked_markup(file, lines):
     """Check HTML files for leaked reST markup; this only works if
     the HTML files have been built.
@@ -337,6 +351,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
     in_literal = None
     excluded_lines = []
     block_line_start = None
+    output = []
     for lineno, line in enumerate(lines, start=1):
         if in_literal is not None:
             current_indentation = len(re.match(" *", line).group(0))
@@ -354,9 +369,10 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
             assert excluded_lines == []
         elif re.match(r" *\.\. ", line) and type_of_explicit_markup(line) == "comment":
             line = "\n"
-        yield line
+        output.append(line)
     if excluded_lines and hidden_block_cb:
         hidden_block_cb(block_line_start, "".join(excluded_lines))
+    return output
 
 
 def type_of_explicit_markup(line):
@@ -385,13 +401,13 @@ def check_triple_backticks(file, lines):
     Good: ``Point``
     Bad: ```Point```
     """
-    for lno, line in enumerate(hide_non_rst_blocks(lines)):
+    for lno, line in enumerate(lines):
         match = triple_backticks.search(line)
         if match:
             yield lno + 1, f"There's no rst syntax using triple backticks"
 
 
-@checker(".rst", severity=1)
+@checker(".rst", severity=1, rst_only=False)
 def check_bad_dedent_in_block(file, lines):
     """Check for dedent not being enough in code blocks."""
 
@@ -478,12 +494,16 @@ def check(filename, text, allow_false_positives=False, severity=1, disabled=()):
     errors = Counter()
     ext = splitext(filename)[1]
     lines = text.splitlines(keepends=True)
+    if any(checker.rst_only for checker in checkers[ext]):
+        lines_with_rst_only = hide_non_rst_blocks(lines)
     for checker in checkers[ext]:
         if checker.falsepositives and not allow_false_positives:
             continue
         csev = checker.severity
         if csev >= severity:
-            for lno, msg in checker(filename, lines):
+            for lno, msg in checker(
+                filename, lines_with_rst_only if checker.rst_only else lines
+            ):
                 if not is_disabled(msg, disabled):
                     print(f"[{csev}] {filename}:{lno}: {msg}")
                     errors[csev] += 1
