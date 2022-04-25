@@ -148,14 +148,6 @@ role_with_no_backticks = re.compile(rf"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)
 #    The :issue`123` is ...
 role_missing_right_column = re.compile(rf"(^|\s):{simplename}`(?!`)")
 
-# Find role glued with a plural mark or something like:
-#    The :exc:`Exception`s
-# instead of:
-#    The :exc:`Exceptions`\ s
-role_missing_surrogate_escape = re.compile(
-    rf"{role_head}`[^`]+?(?<![\\\s`])`(?!{end_string_suffix})"
-)
-
 # TODO: cover more cases
 # https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#toc-entry-44
 default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
@@ -234,7 +226,7 @@ def check_suspicious_constructs_in_paragraphs(file, lines):
         yield from check_paragraph(paragraph_lno, "".join(paragraph))
 
 
-role_body = r"([^`]|\s`+|\\`)+"
+role_body = rf"([^`]|\s`+|\\`|:{simplename}:`([^`]|\s`+|\\`)+`)+"
 normal_role = f":{simplename}:`{role_body}`"
 backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
@@ -255,6 +247,23 @@ def check_directives(file, lines):
             yield lno, "comment seems to be intended as a directive"
         if three_dot_directive_re.search(line):
             yield lno, "directive should start with two dots, not three."
+
+
+@checker(".rst", severity=2)
+def check_role_missing_surrogate_escape(file, lines):
+    # Find role glued with a plural mark or something like:
+    #    The :exc:`Exception`s
+    # instead of:
+    #    The :exc:`Exceptions`\ s
+    # The difficulty here is that the following is valid:
+    #    The :literal:`:exc:`Exceptions``
+    # While this is not:
+    #    The :literal:`:exc:`Exceptions``s
+    for lno, line in enumerate(lines, start=1):
+        line = re.sub("``.*?``", "", line).replace("````", "")
+        role = re.search(rf"{normal_role}s", line)
+        if role:
+            yield lno, f"role missing surrogate escape before plural: {role.group(0)!r}"
 
 
 @checker(".rst", severity=2)
@@ -285,9 +294,6 @@ def check_suspicious_backticks_constructs(file, lines):
             yield lno, "missing space before role"
         if role_missing_right_column.search(line):
             yield lno, "role missing column before first backtick."
-        error = role_missing_surrogate_escape.search(line)
-        if error and not is_in_a_table(error, line):
-            yield lno, f"role missing surrogate escape before plural: {error.group(0)!r}"
 
 
 @checker(".py", ".rst", rst_only=False)
@@ -536,16 +542,21 @@ def main(argv=None):
             print(f"Error: path {path} does not exist")
             return 2
 
-    with multiprocessing.Pool() as pool:
-        results = pool.map(
-            partial(
-                check_file,
-                allow_false_positives=args.false_pos,
-                severity=args.severity,
-                disabled=args.disabled,
-            ),
-            chain.from_iterable(walk(path, args.ignore) for path in args.paths),
-        )
+    todo = list(chain.from_iterable(walk(path, args.ignore) for path in args.paths))
+
+    configured_check_file = partial(
+        check_file,
+        allow_false_positives=args.false_pos,
+        severity=args.severity,
+        disabled=args.disabled,
+    )
+
+    if len(todo) < 8:
+        results = map(configured_check_file, todo)
+    else:
+        with multiprocessing.Pool() as pool:
+            results = pool.map(configured_check_file, todo)
+
     count = reduce(Counter.__add__, results)
 
     if args.verbose:
