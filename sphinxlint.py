@@ -113,7 +113,7 @@ role_head = rf"({before_role}:{simplename}:)"  # A role, with a clean start
 # .. versionchanged: 3.6
 # as it should be:
 # .. versionchanged:: 3.6
-seems_directive_re = re.compile(rf"(?<!\.)\.\. {all_directives}([^a-z:]|:(?!:))")
+seems_directive_re = re.compile(rf"^\s*(?<!\.)\.\. {all_directives}([^a-z:]|:(?!:))")
 
 # Find directive prefixed with three dots instead of two, like:
 # ... versionchanged:: 3.6
