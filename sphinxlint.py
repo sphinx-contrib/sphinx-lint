@@ -402,12 +402,16 @@ triple_backticks = re.compile(
 )
 
 
-@checker(".rst", severity=2)
+@checker(".rst", falsepositives=True, severity=2)
 def check_triple_backticks(file, lines):
-    f"""Check for triple backticks.
+    """Check for triple backticks.
 
     Good: ``Point``
     Bad: ```Point```
+
+    But in reality, triple backticks are valid: ```foo``` gets
+    rendered as `foo`, it's at least used by Sphinx to document rst
+    syntax, but it's really uncommon.
     """
     for lno, line in enumerate(lines):
         match = triple_backticks.search(line)
