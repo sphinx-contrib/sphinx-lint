@@ -58,35 +58,68 @@ OPENERS = (
 
 # fmt: off
 DIRECTIVES_CONTAINING_RST = [
-    # standard docutils ones
+    # reStructuredText directives:
     'admonition', 'attention', 'caution', 'class', 'compound', 'container',
     'danger', 'epigraph', 'error', 'figure', 'footer', 'header', 'highlights',
-    'hint', 'image', 'important', 'include', 'line-block', 'list-table', 'meta',
-    'note', 'parsed-literal', 'pull-quote', 'replace', 'sidebar', 'tip', 'topic',
-    'warning',
-    # Sphinx and Python docs custom ones
-    'acks', 'attribute', 'autoattribute', 'autoclass', 'autodata',
-    'autoexception', 'autofunction', 'automethod', 'automodule',
-    'availability', 'centered', 'cfunction', 'class', 'classmethod', 'cmacro',
-    'cmdoption', 'cmember', 'confval', 'cssclass', 'ctype',
-    'currentmodule', 'cvar', 'data', 'decorator', 'decoratormethod',
-    'deprecated-removed', 'deprecated(?!-removed)', 'describe', 'directive',
-    'doctest', 'envvar', 'event', 'exception', 'function', 'glossary',
-    'highlight', 'highlightlang', 'impl-detail', 'index', 'literalinclude',
-    'method', 'miscnews', 'module', 'moduleauthor', 'opcode', 'pdbcommand',
-    'program', 'role', 'sectionauthor', 'seealso',
-    'sourcecode', 'staticmethod', 'tabularcolumns', 'testcode', 'testoutput',
-    'testsetup', 'toctree', 'todo', 'todolist', 'versionadded',
-    'versionchanged', 'c:function', 'coroutinefunction'
+    'hint', 'image', 'important', 'line-block', 'list-table', 'math', 'meta',
+    'note', 'parsed-literal', 'pull-quote', 'replace', 'sidebar', 'tip',
+    'topic', 'warning',
+    # Added by Sphinx:
+    'acks', 'centered', 'codeauthor', 'default-domain', 'deprecated(?!-removed)',
+    'describe', 'highlight', 'hlist', 'index', 'literalinclude', 'moduleauthor',
+    'object', 'only', 'rst-class', 'sectionauthor', 'seealso', 'tabularcolumns',
+    'toctree', 'versionadded', 'versionchanged',
+    # Added by Sphinx (since removed):
+    'highlightlang',  # removed in Sphinx 4.0
+    # Added by Sphinx (Standard domain):
+    'cmdoption', 'envvar', 'glossary', 'option', 'productionlist', 'program',
+    # Added by Sphinx (Python domain):
+    'py:attribute', 'py:class', 'py:classmethod', 'py:currentmodule', 'py:data',
+    'py:decorator', 'py:decoratormethod', 'py:exception', 'py:function',
+    'py:method', 'py:module', 'py:property', 'py:staticmethod',
+    'attribute', 'class', 'classmethod', 'currentmodule', 'data',
+    'decorator', 'decoratormethod', 'exception', 'function',
+    'method', 'module', 'property', 'staticmethod',
+    # Added by Sphinx (C domain):
+    'c:alias', 'c:enum', 'c:enumerator', 'c:function', 'c:macro', 'c:member',
+    'c:struct', 'c:type', 'c:union', 'c:var',
+    'cfunction', 'cmacro', 'cmember', 'ctype', 'cvar',
+    # Added by Sphinx (sphinx.ext.todo):
+    'todo', 'todolist',
+    # Added in Sphinx's own documentation only:
+    'confval', 'event',
+    # Added in the Python documentation (directives):
+    'audit-event', 'audit-event-table', 'availability',
+    'deprecated-removed', 'impl-detail', 'miscnews',
+    # Added in the Python documentation (objects with implicit directives):
+    '2to3fixer', 'opcode', 'pdbcommand',
+    # Added in the Python documentation (Python domain):
+    'coroutinefunction', 'coroutinemethod', 'abstractmethod',
+    'awaitablefunction', 'awaitablemethod',
+    'py:coroutinefunction', 'py:coroutinemethod', 'py:abstractmethod',
+    'py:awaitablefunction', 'py:awaitablemethod',
 ]
 
 DIRECTIVES_CONTAINING_ARBITRARY_CONTENT = [
-    # standard docutils ones
-    'contents', 'csv-table', 'date',  'default-role', 'include', 'raw',
-    'restructuredtext-test-directive', 'role', 'rubric', 'sectnum', 'table',
-    'target-notes', 'title', 'unicode',
-    # Sphinx and Python docs custom ones
-    'productionlist', 'code-block',
+    # reStructuredText directives:
+    'code', 'code-block', 'contents', 'csv-table', 'date', 'default-role',
+    'include', 'raw', 'restructuredtext-test-directive', 'role', 'rubric',
+    'section-numbering', 'sectnum', 'sourcecode', 'table', 'target-notes',
+    'title', 'unicode',
+    # Added by Sphinx (core):
+    'cssclass',
+    # Added by Sphinx (Standard domain):
+    'productionlist',
+    # Added by Sphinx (C domain):
+    'c:namespace', 'c:namespace-pop', 'c:namespace-push',
+    # Added by Sphinx (sphinx.ext.autodoc):
+    'autoattribute', 'autoclass', 'autodata', 'autodecorator', 'autoexception',
+    'autofunction', 'automethod', 'automodule', 'autonewtypedata',
+    'autonewvarattribute', 'autoproperty',
+    # Added by Sphinx (sphinx.ext.doctest):
+    'doctest', 'testcleanup', 'testcode', 'testoutput', 'testsetup',
+    # Added in the Python documentation:
+    'limited-api-list',
 ]
 
 # fmt: on
