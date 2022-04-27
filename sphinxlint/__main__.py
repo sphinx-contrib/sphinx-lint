@@ -17,6 +17,11 @@ def parse_args(argv=None):
     """Parse command line argument."""
     if argv is None:
         argv = sys.argv
+    if argv[1:2] == ["init", "directives"]:
+        from directivegetter import collect_directives
+
+        raise SystemExit(collect_directives(argv[2:]))
+
     parser = argparse.ArgumentParser(description=__doc__)
 
     enabled_checkers_names = {

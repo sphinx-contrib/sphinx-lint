@@ -98,12 +98,12 @@ def setup(app: Sphinx) -> dict[str, bool]:
     return {"parallel_read_safe": True, "parallel_write_safe": True}
 
 
-def collect_directives():
+def collect_directives(args=None):
     from sphinx import application
     from sphinx.application import Sphinx
 
     try:
-        source_dir, build_dir, *opts = sys.argv[1:]
+        source_dir, build_dir, *opts = args or sys.argv[1:]
     except ValueError:
         raise RuntimeError("Two arguments (source dir and build dir) are required.")
 
