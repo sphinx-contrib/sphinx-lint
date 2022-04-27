@@ -132,12 +132,6 @@ DIRECTIVES_CONTAINING_RST_RE = re.compile(
     r"^\s*\.\. (" + "|".join(DIRECTIVES_CONTAINING_RST) + ")::"
 )
 
-ALL_DIRECTIVES = (
-    "("
-    + "|".join(DIRECTIVES_CONTAINING_RST + DIRECTIVES_CONTAINING_ARBITRARY_CONTENT)
-    + ")"
-)
-
 QUOTE_PAIRS = [
     "»»",  # Swedish
     "‘‚",  # Albanian/Greek/Turkish
@@ -182,6 +176,14 @@ ASCII_ALLOWED_BEFORE_INLINE_MARKUP = r"""[-:/'"<(\[{]"""
 UNICODE_ALLOWED_BEFORE_INLINE_MARKUP = r"[\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
 ASCII_ALLOWED_AFTER_INLINE_MARKUP = r"""[-.,:;!?/'")\]}>]"""
 UNICODE_ALLOWED_AFTER_INLINE_MARKUP = r"[\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
+
+
+def get_all_directives() -> str:
+    return (
+        "("
+        + "|".join(DIRECTIVES_CONTAINING_RST + DIRECTIVES_CONTAINING_ARBITRARY_CONTENT)
+        + ")"
+    )
 
 
 def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
@@ -259,19 +261,24 @@ BACKTICK_IN_FRONT_OF_ROLE_RE = re.compile(
     rf"(^|\s)`:{SIMPLENAME}:{INTERPRETED_TEXT_RE.pattern}", flags=re.VERBOSE | re.DOTALL
 )
 
+
 # Find comments that look like a directive, like:
 # .. versionchanged 3.6
 # or
 # .. versionchanged: 3.6
 # as it should be:
 # .. versionchanged:: 3.6
-SEEMS_DIRECTIVE_RE = re.compile(rf"^\s*(?<!\.)\.\. {ALL_DIRECTIVES}([^a-z:]|:(?!:))")
+def seems_directive_re() -> re.Pattern[str]:
+    return re.compile(rf"^\s*(?<!\.)\.\. {get_all_directives()}([^a-z:]|:(?!:))")
+
 
 # Find directive prefixed with three dots instead of two, like:
 # ... versionchanged:: 3.6
 # instead of:
 # .. versionchanged:: 3.6
-THREE_DOT_DIRECTIVE_RE = re.compile(rf"\.\.\. {ALL_DIRECTIVES}::")
+def three_dot_directive_re() -> re.Pattern[str]:
+    return re.compile(rf"\.\.\. {get_all_directives()}::")
+
 
 # Find role used with double backticks instead of simple backticks like:
 # :const:``None``

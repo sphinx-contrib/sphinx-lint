@@ -23,6 +23,7 @@ requires-python = ">= 3.7"
 dependencies = [
     "regex",
     "polib",
+    "tomli>=2; python_version < '3.11'",
 ]
 dynamic = ["version"]
 

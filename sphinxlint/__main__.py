@@ -7,6 +7,8 @@ from functools import reduce
 from itertools import chain, starmap
 
 from sphinxlint import check_file
+from sphinxlint import rst
+from sphinxlint.config import get_config
 from sphinxlint.checkers import all_checkers
 from sphinxlint.sphinxlint import CheckersOptions
 
@@ -113,6 +115,11 @@ def walk(path, ignore_list):
 
 
 def main(argv=None):
+    config = get_config()
+
+    # Append extra directives
+    rst.DIRECTIVES_CONTAINING_ARBITRARY_CONTENT.extend(config.get("known_directives", []))
+
     enabled_checkers, args = parse_args(argv)
     options = CheckersOptions.from_argparse(args)
     if args.list:

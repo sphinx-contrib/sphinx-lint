@@ -136,8 +136,9 @@ def check_directive_with_three_dots(file, lines, options=None):
     Bad:  ... versionchanged:: 3.6
     Good:  .. versionchanged:: 3.6
     """
+    three_dot_directive_re = rst.three_dot_directive_re()
     for lno, line in enumerate(lines, start=1):
-        if rst.THREE_DOT_DIRECTIVE_RE.search(line):
+        if three_dot_directive_re.search(line):
             yield lno, "directive should start with two dots, not three."
 
 
@@ -148,8 +149,9 @@ def check_directive_missing_colons(file, lines, options=None):
     Bad:  .. versionchanged 3.6.
     Good: .. versionchanged:: 3.6
     """
+    seems_directive_re = rst.seems_directive_re()
     for lno, line in enumerate(lines, start=1):
-        if rst.SEEMS_DIRECTIVE_RE.search(line):
+        if seems_directive_re.search(line):
             yield lno, "comment seems to be intended as a directive"
 
 
