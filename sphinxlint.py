@@ -454,7 +454,7 @@ def parse_args(argv=None):
     if argv[1:2] == ["init", "directives"]:
         from directivegetter import collect_directives
 
-        raise SystemExit(collect_directives(sys.argv[2:]))
+        raise SystemExit(collect_directives(argv[2:]))
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
