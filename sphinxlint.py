@@ -451,6 +451,11 @@ def check_bad_dedent_in_block(file, lines):
 def parse_args(argv=None):
     if argv is None:
         argv = sys.argv
+    if argv[1:2] == ["init", "directives"]:
+        from directivegetter import collect_directives
+
+        raise SystemExit(collect_directives(sys.argv[2:]))
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "-v",
