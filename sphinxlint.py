@@ -76,28 +76,30 @@ openers = (
 
 # fmt: off
 directives = [
-    # standard docutils ones
-    'admonition', 'attention', 'caution', 'class', 'compound', 'container',
-    'contents', 'csv-table', 'danger', 'date', 'default-role', 'epigraph',
-    'error', 'figure', 'footer', 'header', 'highlights', 'hint', 'image',
-    'important', 'include', 'line-block', 'list-table', 'meta', 'note',
-    'parsed-literal', 'pull-quote', 'raw', 'replace',
-    'restructuredtext-test-directive', 'role', 'rubric', 'sectnum', 'sidebar',
-    'table', 'target-notes', 'tip', 'title', 'topic', 'unicode', 'warning',
-    # Sphinx and Python docs custom ones
-    'acks', 'attribute', 'autoattribute', 'autoclass', 'autodata',
-    'autoexception', 'autofunction', 'automethod', 'automodule',
-    'availability', 'centered', 'cfunction', 'class', 'classmethod', 'cmacro',
-    'cmdoption', 'cmember', 'code-block', 'confval', 'cssclass', 'ctype',
-    'currentmodule', 'cvar', 'data', 'decorator', 'decoratormethod',
-    'deprecated-removed', 'deprecated(?!-removed)', 'describe', 'directive',
-    'doctest', 'envvar', 'event', 'exception', 'function', 'glossary',
-    'highlight', 'highlightlang', 'impl-detail', 'index', 'literalinclude',
-    'method', 'miscnews', 'module', 'moduleauthor', 'opcode', 'pdbcommand',
-    'productionlist', 'program', 'role', 'sectionauthor', 'seealso',
-    'sourcecode', 'staticmethod', 'tabularcolumns', 'testcode', 'testoutput',
-    'testsetup', 'toctree', 'todo', 'todolist', 'versionadded',
-    'versionchanged'
+    # reStructuredText directives:
+    'admonition', 'attention', 'caution', 'class', 'code', 'code-block',
+    'compound', 'container', 'contents', 'csv-table', 'danger', 'date', 
+    'default-role', 'epigraph', 'error', 'figure', 'footer', 'header', 
+    'highlights', 'hint', 'image', 'important', 'include', 'line-block', 
+    'list-table', 'math', 'meta', 'note', 'parsed-literal', 'pull-quote', 'raw',
+    'replace', 'restructuredtext-test-directive', 'role', 'rubric', 
+    'section-numbering', 'sectnum', 'sidebar', 'sourcecode', 'table', 
+    'target-notes', 'tip', 'title', 'topic', 'unicode', 'warning',
+    # Added by Sphinx:
+    'acks', 'centered', 'codeauthor', 'default-domain', 'deprecated',
+    'describe', 'highlight', 'hlist', 'index', 'literalinclude', 'moduleauthor',
+    'object', 'only', 'rst-class', 'sectionauthor', 'seealso', 'tabularcolumns',
+    'toctree', 'versionadded', 'versionchanged',
+    # Python docs custom ones:
+    'attribute', 'autoattribute', 'autoclass', 'autodata', 'autoexception',
+    'autofunction', 'automethod', 'automodule', 'availability', 'cfunction',
+    'classmethod', 'cmacro', 'cmdoption', 'cmember', 'confval', 'cssclass',
+    'ctype', 'currentmodule', 'cvar', 'data', 'decorator', 'decoratormethod',
+    'deprecated-removed', 'deprecated(?!-removed)', 'directive', 'doctest',
+    'envvar', 'event', 'exception', 'function', 'glossary', 'highlightlang',
+    'impl-detail', 'method', 'miscnews', 'module', 'opcode', 'pdbcommand',
+    'productionlist', 'program', 'sourcecode', 'staticmethod', 'testcode',
+    'testoutput', 'testsetup', 'todo', 'todolist',
 ]
 # fmt: on
 
