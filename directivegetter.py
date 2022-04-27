@@ -32,8 +32,8 @@ def write_directives(directives: Iterable[str]):
     lines = [
         "[lint]",
         "known_directives = [",
-        *tomlify_directives(DOCUTILS_DIRECTIVES, "reStructuredText"),
-        *tomlify_directives(SPHINX_DIRECTIVES, "Added by Sphinx"),
+        # *tomlify_directives(DOCUTILS_DIRECTIVES, "reStructuredText"),
+        # *tomlify_directives(SPHINX_DIRECTIVES, "Added by Sphinx"),
         *tomlify_directives(directives, "Added by extensions or in conf.py"),
         "]",
         "",  # final blank line
