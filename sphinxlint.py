@@ -21,8 +21,16 @@ import argparse
 from os.path import join, splitext, exists, isfile
 from collections import Counter
 from itertools import chain
+from typing import Any
 import multiprocessing
 
+if sys.version_info[:2] >= (3, 11):
+    import tomllib
+else:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
 
 # The following chars groups are from docutils:
 closing_delimiters = "\\\\.,;!?"
@@ -103,25 +111,9 @@ directives = [
 ]
 # fmt: on
 
-
-all_directives = "(" + "|".join(directives) + ")"
 before_role = r"(^|(?<=[\s(/'{\[*-]))"
 simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
 role_head = rf"({before_role}:{simplename}:)"  # A role, with a clean start
-
-# Find comments that look like a directive, like:
-# .. versionchanged 3.6
-# or
-# .. versionchanged: 3.6
-# as it should be:
-# .. versionchanged:: 3.6
-seems_directive_re = re.compile(rf"^\s*(?<!\.)\.\. {all_directives}([^a-z:]|:(?!:))")
-
-# Find directive prefixed with three dots instead of two, like:
-# ... versionchanged:: 3.6
-# instead of:
-# .. versionchanged:: 3.6
-three_dot_directive_re = re.compile(rf"\.\.\. {all_directives}::")
 
 # Find role used with double backticks instead of simple backticks like:
 # :const:``None``
@@ -157,6 +149,10 @@ default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
 seems_hyperlink_re = re.compile(r"`[^`]+?(\s?)<https?://[^`]+>`(_?)")
 
 leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
+
+
+def get_all_directives() -> str:
+    return "(" + "|".join(directives) + ")"
 
 
 checkers = {}
@@ -244,6 +240,22 @@ def check_default_role(file, lines):
 @checker(".rst", severity=2)
 def check_directives(file, lines):
     """Check for mis-constructed directives."""
+    all_directives = get_all_directives()
+
+    # Find comments that look like a directive, like:
+    # .. versionchanged 3.6
+    # or
+    # .. versionchanged: 3.6
+    # as it should be:
+    # .. versionchanged:: 3.6
+    seems_directive_re = re.compile(rf"^\s*(?<!\.)\.\. {all_directives}([^a-z:]|:(?!:))")
+
+    # Find directive prefixed with three dots instead of two, like:
+    # ... versionchanged:: 3.6
+    # instead of:
+    # .. versionchanged:: 3.6
+    three_dot_directive_re = re.compile(rf"\.\.\. {all_directives}::")
+
     for lno, line in enumerate(lines, start=1):
         if seems_directive_re.search(line):
             yield lno, "comment seems to be intended as a directive"
@@ -386,7 +398,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
 
 
 def type_of_explicit_markup(line):
-    if re.match(rf"\.\. {all_directives}::", line):
+    if re.match(rf"\.\. {get_all_directives()}::", line):
         return "directive"
     if re.match(r"\.\. \[[0-9]+\] ", line):
         return "footnote"
@@ -479,6 +491,22 @@ def parse_args(argv=None):
     return args
 
 
+def _read_toml(filename: str) -> dict[str, Any]:
+    if tomllib is None:
+        return {}
+    with open(filename, "rb") as f:
+        return tomllib.load(f)
+
+
+def get_config() -> dict[str, Any]:
+    if isfile("sphinx.toml"):
+        return _read_toml("sphinx.toml").get("lint", {})
+    if isfile("pyproject.toml"):
+        table = _read_toml("pyproject.toml")
+        return table.get("tool", {}).get("sphinx", {}).get("lint", {})
+    return {}
+
+
 def is_disabled(msg, disabled_messages):
     return any(disabled in msg for disabled in disabled_messages)
 
@@ -542,6 +570,10 @@ def check_file(filename, allow_false_positives=False, severity=1, disabled=()):
 
 def main(argv=None):
     args = parse_args(argv)
+    config = get_config()
+
+    # Append extra directives
+    directives.extend(config.get("known_directives", []))
 
     for path in args.paths:
         if not exists(path):
