@@ -560,6 +560,8 @@ def main(argv=None):
     else:
         with multiprocessing.Pool() as pool:
             results = pool.map(configured_check_file, todo)
+            pool.close()
+            pool.join()
 
     count = reduce(Counter.__add__, results)
 
