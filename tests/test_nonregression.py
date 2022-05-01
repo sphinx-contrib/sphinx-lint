@@ -1,12 +1,12 @@
 import pytest
 
-from sphinxlint import check_text
+from sphinxlint import check_text, checkers
 
 
 @pytest.fixture
 def check_str(capsys):
     def _check_str(rst):
-        error_count = check_text("test.rst", rst)
+        error_count = check_text("test.rst", rst, checkers.values())
         out, err = capsys.readouterr()
         assert not err
         return error_count, out
