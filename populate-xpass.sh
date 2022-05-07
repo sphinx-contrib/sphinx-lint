@@ -2,9 +2,10 @@
 
 # Repos known to pass:
 
-# https://github.com/python/cpython Doc
 # https://github.com/jazzband/django-oauth-toolkit docs
 # https://github.com/pandas-dev/pandas doc
+# https://github.com/python/cpython Doc
+# https://github.com/sympy/sympy doc
 
 grep '^# https://' "$0" |
     while read -r _ repo directory
