@@ -364,7 +364,7 @@ def check_roles_missing_colon_before_backtick(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_carriage_return(file, lines):
+def check_carriage_returns(file, lines):
     """Check for carriage return in lines."""
     for lno, line in enumerate(lines):
         if "\r" in line:
@@ -372,7 +372,7 @@ def check_carriage_return(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_horizontal_tab(file, lines):
+def check_horizontal_tabs(file, lines):
     """Check for horizontal tabs in lines."""
     for lno, line in enumerate(lines):
         if "\t" in line:
@@ -380,7 +380,7 @@ def check_horizontal_tab(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_trailing_whitespace(file, lines):
+def check_trailing_whitespaces(file, lines):
     """Check for trailing whitespaces at end of lines."""
     for lno, line in enumerate(lines):
         if line.rstrip("\n").rstrip(" \t") != line.rstrip("\n"):
@@ -557,7 +557,7 @@ def parse_args(argv=None):
         "-d",
         "--disable",
         action=DisableAction,
-        help='coma-separated list of checks to disable. Give "all" to enable them all. '
+        help='comma-separated list of checks to disable. Give "all" to enable them all. '
         "Can be used in conjunction with --enable (it's evaluated left-to-right). "
         'One can use "--disable all --enable trailing-whitespace" to enable a '
         "single check.",
@@ -566,7 +566,7 @@ def parse_args(argv=None):
         "-e",
         "--enable",
         action=EnableAction,
-        help='coma-separated list of checks to enable. Give "all" to enable them all. '
+        help='comma-separated list of checks to enable. Give "all" to enable them all. '
         "Can be used in conjunction with --disable (it's evaluated left-to-right). "
         'One can use "--enable all --disable trailing-whitespace" to enable '
         "all but one check.",
