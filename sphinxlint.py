@@ -268,7 +268,7 @@ def check_directives_missing_colon(file, lines):
 
     Instead of:
 
-    .. versionchanged: 3.6
+    .. versionchanged:: 3.6
     """
     for lno, line in enumerate(lines, start=1):
         if seems_directive_re.search(line):
