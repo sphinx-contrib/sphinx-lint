@@ -14,12 +14,12 @@ def check_str(capsys):
     yield _check_str
 
 
-def test_role_missing_column(check_str):
-    """sphinx-lint should find missing leading column in roles.
+def test_role_missing_colon(check_str):
+    """sphinx-lint should find missing leading colon in roles.
 
     It's at the end the same as role glued with word.
     """
-    error_count, out = check_str("The c:macro:`PY_VERSION_HEX` miss a column.\n")
+    error_count, out = check_str("The c:macro:`PY_VERSION_HEX` miss a colon.\n")
     assert "role" in out
     assert error_count
 

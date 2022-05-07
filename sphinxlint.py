@@ -134,7 +134,7 @@ end_string_suffix = f"($|(?=\\s|[\x00{closing_delimiters}{delimiters}{closers}|]
 # instead of:
 #     the :c:func:`PyThreadState_LeaveTracing` function.
 #
-# Also finds roles missing their leading column like:
+# Also finds roles missing their leading colon like:
 #     issue:`123`
 # instead of:
 #     :issue:`123`
@@ -143,9 +143,9 @@ role_glued_with_word = re.compile(rf"(^|\s)(?!:){simplename}:`(?!`)")
 
 role_with_no_backticks = re.compile(rf"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)")
 
-# Find role missing middle column, like:
+# Find role missing middle colon, like:
 #    The :issue`123` is ...
-role_missing_right_column = re.compile(rf"(^|\s):{simplename}`(?!`)")
+role_missing_right_colon = re.compile(rf"(^|\s):{simplename}`(?!`)")
 
 # TODO: cover more cases
 # https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#toc-entry-44
@@ -263,7 +263,7 @@ def check_directives_using_three_dots(file, lines):
 
 
 @checker(".rst")
-def check_directives_missing_column(file, lines):
+def check_directives_missing_colon(file, lines):
     """Search for directive wrongly typed as comments, like: .. versionchanged 3.6.
 
     Instead of:
@@ -356,11 +356,11 @@ def check_roles_missing_leading_space(file, lines):
 
 
 @checker(".rst")
-def check_roles_missing_column_before_backtick(file, lines):
-    """Search for roles missing a column, like: :issue`123`."""
+def check_roles_missing_colon_before_backtick(file, lines):
+    """Search for roles missing a colon, like: :issue`123`."""
     for lno, line in enumerate(lines, start=1):
-        if role_missing_right_column.search(line):
-            yield lno, "role missing column before first backtick."
+        if role_missing_right_colon.search(line):
+            yield lno, "role missing colon before first backtick."
 
 
 @checker(".py", ".rst", rst_only=False)
