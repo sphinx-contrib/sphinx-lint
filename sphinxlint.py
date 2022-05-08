@@ -276,8 +276,8 @@ def check_directives_without_colon(file, lines):
 
 
 @checker(".rst")
-def check_roles_glued_to_the_right(file, lines):
-    r"""Search for roles glued to plurals like: :exc:`Exception`s.
+def check_missing_space_after_roles(file, lines):
+    r"""Search for roles immediately followed by a character, like :exc:`Exception`s.
 
     Instead of:
        The :exc:`Exceptions`\ s
