@@ -23,7 +23,7 @@ def test_disable_all(capsys):
     """Checks that disabling all checks actually disable them all."""
     main(["sphinxlint", "--disable", "all", "--list"])
     out, _err = capsys.readouterr()
-    assert count_bullets(out) == 0
+    assert out == "No checkers selected.\n"
 
 
 def test_enable_all(capsys):

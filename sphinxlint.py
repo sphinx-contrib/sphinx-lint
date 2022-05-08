@@ -646,6 +646,10 @@ def check_file(filename, checkers):
 def main(argv=None):
     enabled_checkers, args = parse_args(argv)
     if args.list:
+        if not enabled_checkers:
+            print("No checkers selected.")
+            return 0
+        print(f"{len(enabled_checkers)} checkers selected:")
         for check in sorted(enabled_checkers, key=lambda fct: fct.name):
             print(f"- {check.name}: {check.__doc__.splitlines()[0]}")
         return 0
