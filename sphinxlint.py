@@ -373,7 +373,7 @@ def check_carriage_returns(file, lines):
 
 @checker(".py", ".rst", rst_only=False)
 def check_horizontal_tabs(file, lines):
-    """Check for horizontal tabs in lines."""
+    """Check for horizontal tabs (\\t) in lines."""
     for lno, line in enumerate(lines):
         if "\t" in line:
             yield lno + 1, "OMG TABS!!!1"
