@@ -314,7 +314,7 @@ def check_backtick_before_roles(file, lines):
 
 
 @checker(".rst")
-def check_hyperlinks_missing_space_before_less_than(file, lines):
+def check_hyperlinks_missing_space(file, lines):
     """Search for hyperlinks missing a space, like: `Link text<https://example.com>`."""
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
@@ -325,7 +325,7 @@ def check_hyperlinks_missing_space_before_less_than(file, lines):
 
 
 @checker(".rst")
-def check_hyperlinks_missing_underscore_after_closing_backtick(file, lines):
+def check_hyperlinks_missing_final_underscore(file, lines):
     """Search for hyperlinks missing underscore after their closing backtick."""
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
