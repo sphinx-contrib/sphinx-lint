@@ -3,11 +3,20 @@ import re
 
 from sphinxlint import main
 
-BULLET = re.compile(r"^\s*- ", flags=re.MULTILINE)
+CHECKER_LINE = re.compile(r"^\s*- ([^:]+):", flags=re.MULTILINE)
 
 
-def count_bullets(text):
-    return len(BULLET.findall(text))
+def parse_checkers(text):
+    """Given a --list output, returns a list of checkers names."""
+    return CHECKER_LINE.findall(text)
+
+
+def count_checkers(text):
+    return len(parse_checkers(text))
+
+
+def random_checker(text):
+    return choice(parse_checkers(text))
 
 
 def test_default(capsys):
@@ -16,7 +25,7 @@ def test_default(capsys):
     """
     main(["sphinxlint", "--list"])
     out, _err = capsys.readouterr()
-    assert count_bullets(out) > 10
+    assert count_checkers(out) > 10
 
 
 def test_disable_all(capsys):
@@ -33,7 +42,7 @@ def test_enable_all(capsys):
     default_out, _err = capsys.readouterr()
     main(["sphinxlint", "--enable", "all", "--list"])
     all_out, _err = capsys.readouterr()
-    assert count_bullets(default_out) < count_bullets(all_out)
+    assert count_checkers(default_out) < count_checkers(all_out)
 
 
 def test_disable_one(capsys):
@@ -41,10 +50,10 @@ def test_disable_one(capsys):
     give one check less than the default set."""
     main(["sphinxlint", "--list"])
     default_out, _err = capsys.readouterr()
-    one_to_disable = choice(default_out.splitlines())[2:].split(":")[0]
+    one_to_disable = random_checker(default_out)
     main(["sphinxlint", "--list", "--disable", one_to_disable])
     disabled_out, _err = capsys.readouterr()
-    assert count_bullets(default_out) - 1 == count_bullets(disabled_out)
+    assert count_checkers(default_out) - 1 == count_checkers(disabled_out)
 
 
 def test_enable_one(capsys):
@@ -54,8 +63,10 @@ def test_enable_one(capsys):
     default_out, _err = capsys.readouterr()
     main(["sphinxlint", "--list", "--enable", "all"])
     all_out, _err = capsys.readouterr()
-    not_enabled_by_default = set(all_out.splitlines()) - set(default_out.splitlines())
-    one_to_enable = choice(list(not_enabled_by_default))[2:].split(":")[0]
+    not_enabled_by_default = list(
+        set(parse_checkers(all_out)) - set(parse_checkers(default_out))
+    )
+    one_to_enable = choice(not_enabled_by_default)
     main(["sphinxlint", "--list", "--enable", one_to_enable])
     enabled_out, _err = capsys.readouterr()
-    assert count_bullets(default_out) + 1 == count_bullets(enabled_out)
+    assert count_checkers(default_out) + 1 == count_checkers(enabled_out)
