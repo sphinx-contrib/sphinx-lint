@@ -291,7 +291,7 @@ def check_missing_space_after_roles(file, lines):
         line = re.sub("``.*?``", "", line).replace("````", "")
         role = re.search(rf"{normal_role}s", line)
         if role:
-            yield lno, f"role missing surrogate escape before plural: {role.group(0)!r}"
+            yield lno, f"role missing (escape) space after role: {role.group(0)!r}"
 
 
 @checker(".rst")
