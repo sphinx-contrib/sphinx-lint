@@ -255,7 +255,7 @@ def check_default_role(file, lines):
 
 
 @checker(".rst")
-def check_directives_using_three_dots(file, lines):
+def check_directives_with_three_dots(file, lines):
     """Search for directives with three dots instead of two."""
     for lno, line in enumerate(lines, start=1):
         if three_dot_directive_re.search(line):
