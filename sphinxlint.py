@@ -365,7 +365,7 @@ def check_roles_missing_colon_before_backtick(file, lines):
 
 @checker(".py", ".rst", rst_only=False)
 def check_carriage_returns(file, lines):
-    """Check for carriage return in lines."""
+    """Check for carriage returns (\\r) in lines."""
     for lno, line in enumerate(lines):
         if "\r" in line:
             yield lno + 1, "\\r in line"
