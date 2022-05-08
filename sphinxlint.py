@@ -304,7 +304,7 @@ def check_roles_without_backticks(file, lines):
 
 
 @checker(".rst")
-def check_roles_preceded_with_backtick(file, lines):
+def check_backtick_before_roles(file, lines):
     """Search for roles preceded by a backtick, like `:fct:`sum`."""
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
