@@ -263,7 +263,7 @@ def check_directives_with_three_dots(file, lines):
 
 
 @checker(".rst")
-def check_directives_missing_colon(file, lines):
+def check_directives_without_colon(file, lines):
     """Search for directive wrongly typed as comments, like: .. versionchanged 3.6.
 
     Instead of:
