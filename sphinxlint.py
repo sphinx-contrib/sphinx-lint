@@ -559,7 +559,7 @@ def parse_args(argv=None):
         action=DisableAction,
         help='comma-separated list of checks to disable. Give "all" to enable them all. '
         "Can be used in conjunction with --enable (it's evaluated left-to-right). "
-        'One can use "--disable all --enable trailing-whitespace" to enable a '
+        '"--disable all --enable trailing-whitespace" can be used to enable a '
         "single check.",
     )
     parser.add_argument(
