@@ -198,8 +198,12 @@ role_missing_closing_backtick = re.compile(rf"({role_head}`[^`]+?)[^`]*$")
 
 
 @checker(".rst")
-def check_roles_missing_last_backtick(file, lines):
-    """Search for roles missing their closing backticks, like :fct:`foo."""
+def check_missing_backtick_after_role(file, lines):
+    """Search for roles missing their closing backticks.
+
+    Bad:  :fct:`foo
+    Good: :fct:`foo`
+    """
     for paragraph_lno, paragraph in paragraphs(lines):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
@@ -210,8 +214,12 @@ def check_roles_missing_last_backtick(file, lines):
 
 
 @checker(".rst")
-def check_inline_literal_glued_on_the_right(file, lines):
-    """Search for inline literals glued to plural, like ``items``s."""
+def check_missing_space_after_literal(file, lines):
+    r"""Search for inline literals immediately followed by a character.
+
+    Bad:  ``items``s
+    Good: ``items``\ s
+    """
     for paragraph_lno, paragraph in paragraphs(lines):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
@@ -248,27 +256,34 @@ backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
 @checker(".rst", enabled=False)
 def check_default_role(file, lines):
-    """Search for default roles (but they are allowed in many projects)."""
+    """Search for default roles (but they are allowed in many projects).
+
+    Bad:  `print`
+    Good: ``print``
+    """
     for lno, line in enumerate(lines, start=1):
         if default_role_re.search(line):
             yield lno, "default role used (hint: for inline literals, use double backticks)"
 
 
 @checker(".rst")
-def check_directives_with_three_dots(file, lines):
-    """Search for directives with three dots instead of two."""
+def check_directive_with_three_dots(file, lines):
+    """Search for directives with three dots instead of two.
+
+    Bad:  ... versionchanged:: 3.6
+    Good:  .. versionchanged:: 3.6
+    """
     for lno, line in enumerate(lines, start=1):
         if three_dot_directive_re.search(line):
             yield lno, "directive should start with two dots, not three."
 
 
 @checker(".rst")
-def check_directives_without_colon(file, lines):
-    """Search for directive wrongly typed as comments, like: .. versionchanged 3.6.
+def check_directive_missing_colons(file, lines):
+    """Search for directive wrongly typed as comments.
 
-    Instead of:
-
-    .. versionchanged:: 3.6
+    Bad:  .. versionchanged 3.6.
+    Good: .. versionchanged:: 3.6
     """
     for lno, line in enumerate(lines, start=1):
         if seems_directive_re.search(line):
@@ -276,17 +291,16 @@ def check_directives_without_colon(file, lines):
 
 
 @checker(".rst")
-def check_missing_space_after_roles(file, lines):
-    r"""Search for roles immediately followed by a character, like :exc:`Exception`s.
+def check_missing_space_after_role(file, lines):
+    r"""Search for roles immediately followed by a character.
 
-    Instead of:
-       The :exc:`Exceptions`\ s
-
-    The difficulty here is that the following is valid:
-       The :literal:`:exc:`Exceptions``
-    While this is not:
-       The :literal:`:exc:`Exceptions``s
+    Bad:  :exc:`Exception`s.
+    Good: :exc:`Exceptions`\ s
     """
+    # The difficulty here is that the following is valid:
+    #    The :literal:`:exc:`Exceptions``
+    # While this is not:
+    #    The :literal:`:exc:`Exceptions``s
     for lno, line in enumerate(lines, start=1):
         line = re.sub("``.*?``", "", line).replace("````", "")
         role = re.search(rf"{normal_role}s", line)
@@ -295,8 +309,12 @@ def check_missing_space_after_roles(file, lines):
 
 
 @checker(".rst")
-def check_roles_without_backticks(file, lines):
-    """Search roles without backticks like :func:pdb.main."""
+def check_role_without_backticks(file, lines):
+    """Search roles without backticks.
+
+    Bad:  :func:pdb.main
+    Good: :func:`pdb.main`
+    """
     for lno, line in enumerate(lines, start=1):
         no_backticks = role_with_no_backticks.search(line)
         if no_backticks:
@@ -304,8 +322,12 @@ def check_roles_without_backticks(file, lines):
 
 
 @checker(".rst")
-def check_backtick_before_roles(file, lines):
-    """Search for roles preceded by a backtick, like `:fct:`sum`."""
+def check_backtick_before_role(file, lines):
+    """Search for roles preceded by a backtick.
+
+    Bad: `:fct:`sum`
+    Good: :fct:`sum`
+    """
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
             continue
@@ -314,8 +336,12 @@ def check_backtick_before_roles(file, lines):
 
 
 @checker(".rst")
-def check_hyperlinks_missing_space(file, lines):
-    """Search for hyperlinks missing a space, like: `Link text<https://example.com>`."""
+def check_missing_space_in_hyperlink(file, lines):
+    """Search for hyperlinks missing a space.
+
+    Bad:  `Link text<https://example.com>`
+    Good: `Link text <https://example.com>`
+    """
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
             continue
@@ -325,8 +351,12 @@ def check_hyperlinks_missing_space(file, lines):
 
 
 @checker(".rst")
-def check_hyperlinks_missing_final_underscore(file, lines):
-    """Search for hyperlinks missing underscore after their closing backtick."""
+def check_missing_underscore_after_hyperlink(file, lines):
+    """Search for hyperlinks missing underscore after their closing backtick.
+
+    Bad:  `Link text <https://example.com>`
+    Good: `Link text <https://example.com>`_
+    """
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
             continue
@@ -336,8 +366,12 @@ def check_hyperlinks_missing_final_underscore(file, lines):
 
 
 @checker(".rst")
-def check_roles_with_double_backtick(file, lines):
-    """Search for roles with double backticks like: :fct:``sum``."""
+def check_role_with_double_backtick(file, lines):
+    """Search for roles with double backticks.
+
+    Bad:  :fct:``sum``
+    Good: :fct:`sum`
+    """
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
             continue
@@ -346,8 +380,12 @@ def check_roles_with_double_backtick(file, lines):
 
 
 @checker(".rst")
-def check_roles_missing_leading_space(file, lines):
-    """Search for spaces missing before roles, like the:fct:`sum`."""
+def check_missing_space_before_role(file, lines):
+    """Search for spaces missing before roles.
+
+    Bad:  the:fct:`sum`
+    Good: the :fct:`sum`
+    """
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
             continue
@@ -356,31 +394,35 @@ def check_roles_missing_leading_space(file, lines):
 
 
 @checker(".rst")
-def check_roles_missing_colon_before_backtick(file, lines):
-    """Search for roles missing a colon, like: :issue`123`."""
+def check_missing_colon_in_role(file, lines):
+    """Search for roles missing a colon.
+
+    Bad:  :issue`123`
+    Good: :issue:`123`
+    """
     for lno, line in enumerate(lines, start=1):
         if role_missing_right_colon.search(line):
             yield lno, "role missing colon before first backtick."
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_carriage_returns(file, lines):
-    """Check for carriage returns (\\r) in lines."""
+def check_carriage_return(file, lines):
+    r"""Check for carriage returns (\r) in lines."""
     for lno, line in enumerate(lines):
         if "\r" in line:
             yield lno + 1, "\\r in line"
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_horizontal_tabs(file, lines):
-    """Check for horizontal tabs (\\t) in lines."""
+def check_horizontal_tab(file, lines):
+    r"""Check for horizontal tabs (\t) in lines."""
     for lno, line in enumerate(lines):
         if "\t" in line:
             yield lno + 1, "OMG TABS!!!1"
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_trailing_whitespaces(file, lines):
+def check_trailing_whitespace(file, lines):
     """Check for trailing whitespaces at end of lines."""
     for lno, line in enumerate(lines):
         if line.rstrip("\n").rstrip(" \t") != line.rstrip("\n"):
@@ -388,7 +430,7 @@ def check_trailing_whitespaces(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_newline_at_end_of_file(file, lines):
+def check_missing_final_newline(file, lines):
     """Check if the last line ends with a newline, like any other lines."""
     if lines:
         if not lines[-1].endswith("\n"):
@@ -413,8 +455,9 @@ def check_line_too_long(file, lines):
 
 @checker(".html", enabled=False, rst_only=False)
 def check_leaked_markup(file, lines):
-    """Check HTML files for leaked reST markup; this only works if
-    the HTML files have been built.
+    """Check HTML files for leaked reST markup.
+
+    This only works if the HTML files have been built.
     """
     for lno, line in enumerate(lines):
         if leaked_markup_re.search(line):
@@ -486,11 +529,11 @@ triple_backticks = re.compile(
 
 
 @checker(".rst", enabled=False)
-def check_triple_backticks(file, lines):
+def check_triple_backtick(file, lines):
     """Check for triple backticks, like ```Point``` (but it's a valid syntax).
 
-    Good: ``Point``
     Bad: ```Point```
+    Good: ``Point``
 
     In reality, triple backticks are valid: ```foo``` gets
     rendered as `foo`, it's at least used by Sphinx to document rst
@@ -503,8 +546,17 @@ def check_triple_backticks(file, lines):
 
 
 @checker(".rst", rst_only=False)
-def check_block_bad_dedent(file, lines):
-    """Check for dedent not being enough in code blocks."""
+def check_bad_dedent(file, lines):
+    """Check for mis-alignment in indentation in code blocks.
+
+    |A 5 lines block::
+    |
+    |    Hello!
+    |
+    | Looks like another block::
+    |
+    |    But in fact it's not due to the leading space.
+    """
 
     errors = []
 
@@ -651,7 +703,12 @@ def main(argv=None):
             return 0
         print(f"{len(enabled_checkers)} checkers selected:")
         for check in sorted(enabled_checkers, key=lambda fct: fct.name):
-            print(f"- {check.name}: {check.__doc__.splitlines()[0]}")
+            if args.verbose:
+                print(f"- {check.name}: {check.__doc__}")
+            else:
+                print(f"- {check.name}: {check.__doc__.splitlines()[0]}")
+        if not args.verbose:
+            print("\n(Use `--list --verbose` to know more about each check)")
         return 0
 
     for path in args.paths:
