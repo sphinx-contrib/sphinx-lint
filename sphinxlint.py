@@ -533,7 +533,7 @@ triple_backticks = re.compile(
 
 
 @checker(".rst", enabled=False)
-def check_triple_backtick(file, lines):
+def check_triple_backticks(file, lines):
     """Check for triple backticks, like ```Point``` (but it's a valid syntax).
 
     Bad: ```Point```
