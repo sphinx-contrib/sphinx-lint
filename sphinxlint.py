@@ -370,7 +370,7 @@ def check_missing_underscore_after_hyperlink(file, lines):
 
 
 @checker(".rst")
-def check_role_with_double_backtick(file, lines):
+def check_role_with_double_backticks(file, lines):
     """Search for roles with double backticks.
 
     Bad:  :fct:``sum``
