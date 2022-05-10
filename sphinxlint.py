@@ -434,7 +434,7 @@ def check_trailing_whitespace(file, lines):
 def check_missing_final_newline(file, lines):
     """Check if the last line ends with a newline, like any other lines."""
     if lines and not lines[-1].endswith("\n"):
-            yield len(lines), "No newline at end of file (no-newline-at-end-of-file)."
+        yield len(lines), "No newline at end of file."
 
 
 @checker(".rst", enabled=False, rst_only=False)
