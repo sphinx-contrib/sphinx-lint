@@ -425,15 +425,15 @@ def check_horizontal_tab(file, lines):
 def check_trailing_whitespace(file, lines):
     """Check for trailing whitespaces at end of lines."""
     for lno, line in enumerate(lines):
-        if line.rstrip("\n").rstrip(" \t") != line.rstrip("\n"):
+        stripped_line = line.rstrip("\n")
+        if stripped_line.rstrip(" \t") != stripped_line:
             yield lno + 1, "trailing whitespace"
 
 
 @checker(".py", ".rst", rst_only=False)
 def check_missing_final_newline(file, lines):
     """Check if the last line ends with a newline, like any other lines."""
-    if lines:
-        if not lines[-1].endswith("\n"):
+    if lines and not lines[-1].endswith("\n"):
             yield len(lines), "No newline at end of file (no-newline-at-end-of-file)."
 
 
