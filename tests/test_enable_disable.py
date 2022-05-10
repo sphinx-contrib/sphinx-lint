@@ -20,9 +20,7 @@ def random_checker(text):
 
 
 def test_default(capsys):
-    """We know we have more than 10 checks (even more than 20), so make
-    sure `--list` show many of them.
-    """
+    """Ensure that the output of `--list` includes at least 10 checkers."""
     main(["sphinxlint", "--list"])
     out, _err = capsys.readouterr()
     assert count_checkers(out) > 10
