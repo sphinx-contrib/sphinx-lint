@@ -229,7 +229,11 @@ def check_missing_space_after_literal(file, lines):
         ):
             if not re.match(end_string_suffix, role.group(0)[-1]):
                 error_offset = paragraph[: role.start()].count("\n")
-                yield paragraph_lno + error_offset, f"inline literal missing surrogate space before plural: {role.group(0)!r}"
+                yield (
+                    paragraph_lno + error_offset,
+                    "inline literal missing "
+                    f"(escaped) space after literal: {role.group(0)!r}",
+                )
 
 
 def paragraphs(lines):
