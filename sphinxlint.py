@@ -385,7 +385,7 @@ def check_role_with_double_backticks(file, lines):
 
 @checker(".rst")
 def check_missing_space_before_role(file, lines):
-    """Search for spaces missing before roles.
+    """Search for missing spaces before roles.
 
     Bad:  the:fct:`sum`
     Good: the :fct:`sum`
