@@ -3,8 +3,10 @@
 # Repos known to pass:
 
 # https://github.com/jazzband/django-oauth-toolkit docs
+# https://github.com/neo4j/neo4j-python-driver docs
 # https://github.com/pandas-dev/pandas doc
 # https://github.com/python/cpython Doc
+# https://github.com/spyder-ide/spyder-docs doc
 # https://github.com/sympy/sympy doc
 
 grep '^# https://' "$0" |
