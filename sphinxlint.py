@@ -399,7 +399,7 @@ def check_missing_space_before_role(file, lines):
 
 @checker(".rst")
 def check_missing_colon_in_role(file, lines):
-    """Search for roles missing a colon.
+    """Search for missing colons in roles.
 
     Bad:  :issue`123`
     Good: :issue:`123`
