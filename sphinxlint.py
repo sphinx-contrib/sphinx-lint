@@ -13,16 +13,15 @@
 
 __version__ = "0.4.1"
 
+import argparse
+import multiprocessing
 import os
 import re
 import sys
-from functools import partial, reduce
-import argparse
-from os.path import join, splitext, exists, isfile
 from collections import Counter
-from itertools import chain
-import multiprocessing
-
+from functools import reduce
+from itertools import chain, starmap
+from os.path import exists, isfile, join, splitext
 
 # The following chars groups are from docutils:
 closing_delimiters = "\\\\.,;!?"
@@ -135,7 +134,7 @@ end_string_suffix = f"($|(?=\\s|[\x00{closing_delimiters}{delimiters}{closers}|]
 # instead of:
 #     the :c:func:`PyThreadState_LeaveTracing` function.
 #
-# Also finds roles missing their leading column like:
+# Also finds roles missing their leading colon like:
 #     issue:`123`
 # instead of:
 #     :issue:`123`
@@ -144,9 +143,9 @@ role_glued_with_word = re.compile(rf"(^|\s)(?!:){simplename}:`(?!`)")
 
 role_with_no_backticks = re.compile(rf"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)")
 
-# Find role missing middle column, like:
+# Find role missing middle colon, like:
 #    The :issue`123` is ...
-role_missing_right_column = re.compile(rf"(^|\s):{simplename}`(?!`)")
+role_missing_right_colon = re.compile(rf"(^|\s):{simplename}`(?!`)")
 
 # TODO: cover more cases
 # https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#toc-entry-44
@@ -159,25 +158,27 @@ leaked_markup_re = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 
 checkers = {}
 
-checker_props = {"severity": 1, "falsepositives": False, "rst_only": True}
-
 
 def checker(*suffixes, **kwds):
     """Decorator to register a function as a checker."""
+    checker_props = {"enabled": True, "rst_only": True}
 
     def deco(func):
-        for suffix in suffixes:
-            checkers.setdefault(suffix, []).append(func)
-        for prop in checker_props:
-            setattr(func, prop, kwds.get(prop, checker_props[prop]))
+        if not func.__name__.startswith("check_"):
+            raise ValueError("Checker names should start with 'check_'.")
+        for prop, default_value in checker_props.items():
+            setattr(func, prop, kwds.get(prop, default_value))
+        func.suffixes = suffixes
+        func.name = func.__name__[len("check_") :].replace("_", "-")
+        checkers[func.name] = func
         return func
 
     return deco
 
 
-@checker(".py", severity=4, rst_only=False)
-def check_syntax(file, lines):
-    """Check Python examples for valid syntax."""
+@checker(".py", rst_only=False)
+def check_python_syntax(file, lines):
+    """Search invalid syntax in Python examples."""
     code = "".join(lines)
     if "\r" in code:
         if os.name != "nt":
@@ -196,34 +197,60 @@ def is_in_a_table(error, line):
 role_missing_closing_backtick = re.compile(rf"({role_head}`[^`]+?)[^`]*$")
 
 
-def check_paragraph(paragraph_lno, paragraph):
-    if paragraph.count("|") > 4:
-        return  # we don't handle tables yet.
-    error = role_missing_closing_backtick.search(paragraph)
-    if error:
-        error_offset = paragraph[: error.start()].count("\n")
-        yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
-    paragraph_without_roles = re.sub(normal_role, "", paragraph).replace("````", "")
-    for role in re.finditer("``.+?``(?!`).", paragraph_without_roles, flags=re.DOTALL):
-        if not re.match(end_string_suffix, role.group(0)[-1]):
-            error_offset = paragraph[: role.start()].count("\n")
-            yield paragraph_lno + error_offset, f"code sample missing surrogate space before plural: {role.group(0)!r}"
+@checker(".rst")
+def check_missing_backtick_after_role(file, lines):
+    """Search for roles missing their closing backticks.
+
+    Bad:  :fct:`foo
+    Good: :fct:`foo`
+    """
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if paragraph.count("|") > 4:
+            return  # we don't handle tables yet.
+        error = role_missing_closing_backtick.search(paragraph)
+        if error:
+            error_offset = paragraph[: error.start()].count("\n")
+            yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
 
 
-@checker(".rst", severity=2)
-def check_suspicious_constructs_in_paragraphs(file, lines):
-    """Check for suspicious reST constructs at paragraph level."""
+@checker(".rst")
+def check_missing_space_after_literal(file, lines):
+    r"""Search for inline literals immediately followed by a character.
+
+    Bad:  ``items``s
+    Good: ``items``\ s
+    """
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if paragraph.count("|") > 4:
+            return  # we don't handle tables yet.
+        paragraph_without_roles = re.sub(normal_role, "", paragraph).replace("````", "")
+        for role in re.finditer(
+            "``.+?``(?!`).", paragraph_without_roles, flags=re.DOTALL
+        ):
+            if not re.match(end_string_suffix, role.group(0)[-1]):
+                error_offset = paragraph[: role.start()].count("\n")
+                yield (
+                    paragraph_lno + error_offset,
+                    "inline literal missing "
+                    f"(escaped) space after literal: {role.group(0)!r}",
+                )
+
+
+def paragraphs(lines):
+    """Yield (paragraph_line_no, paragraph_text) pairs describing
+    paragraphs of the given lines.
+    """
     paragraph = []
     paragraph_lno = 1
     for lno, line in enumerate(lines, start=1):
         if line != "\n":
             paragraph.append(line)
         elif paragraph:
-            yield from check_paragraph(paragraph_lno, "".join(paragraph))
+            yield paragraph_lno, "".join(paragraph)
             paragraph = []
             paragraph_lno = lno
     if paragraph:
-        yield from check_paragraph(paragraph_lno, "".join(paragraph))
+        yield paragraph_lno, "".join(paragraph)
 
 
 role_body = rf"([^`]|\s`+|\\`|:{simplename}:`([^`]|\s`+|\\`)+`)+"
@@ -231,30 +258,49 @@ normal_role = f":{simplename}:`{role_body}`"
 backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
 
-@checker(".rst", severity=0)
+@checker(".rst", enabled=False)
 def check_default_role(file, lines):
-    """Check for default roles."""
+    """Search for default roles (but they are allowed in many projects).
+
+    Bad:  `print`
+    Good: ``print``
+    """
     for lno, line in enumerate(lines, start=1):
         if default_role_re.search(line):
-            yield lno, "default role used (hint: for inline code, use double backticks)"
+            yield lno, "default role used (hint: for inline literals, use double backticks)"
 
 
-@checker(".rst", severity=2)
-def check_directives(file, lines):
-    """Check for mis-constructed directives."""
+@checker(".rst")
+def check_directive_with_three_dots(file, lines):
+    """Search for directives with three dots instead of two.
+
+    Bad:  ... versionchanged:: 3.6
+    Good:  .. versionchanged:: 3.6
+    """
     for lno, line in enumerate(lines, start=1):
-        if seems_directive_re.search(line):
-            yield lno, "comment seems to be intended as a directive"
         if three_dot_directive_re.search(line):
             yield lno, "directive should start with two dots, not three."
 
 
-@checker(".rst", severity=2)
-def check_role_missing_surrogate_escape(file, lines):
-    # Find role glued with a plural mark or something like:
-    #    The :exc:`Exception`s
-    # instead of:
-    #    The :exc:`Exceptions`\ s
+@checker(".rst")
+def check_directive_missing_colons(file, lines):
+    """Search for directive wrongly typed as comments.
+
+    Bad:  .. versionchanged 3.6.
+    Good: .. versionchanged:: 3.6
+    """
+    for lno, line in enumerate(lines, start=1):
+        if seems_directive_re.search(line):
+            yield lno, "comment seems to be intended as a directive"
+
+
+@checker(".rst")
+def check_missing_space_after_role(file, lines):
+    r"""Search for roles immediately followed by a character.
+
+    Bad:  :exc:`Exception`s.
+    Good: :exc:`Exceptions`\ s
+    """
     # The difficulty here is that the following is valid:
     #    The :literal:`:exc:`Exceptions``
     # While this is not:
@@ -263,57 +309,140 @@ def check_role_missing_surrogate_escape(file, lines):
         line = re.sub("``.*?``", "", line).replace("````", "")
         role = re.search(rf"{normal_role}s", line)
         if role:
-            yield lno, f"role missing surrogate escape before plural: {role.group(0)!r}"
+            yield lno, f"role missing (escaped) space after role: {role.group(0)!r}"
 
 
-@checker(".rst", severity=2)
-def check_roles(file, lines):
-    """Check for suspicious role constructs."""
+@checker(".rst")
+def check_role_without_backticks(file, lines):
+    """Search roles without backticks.
+
+    Bad:  :func:pdb.main
+    Good: :func:`pdb.main`
+    """
     for lno, line in enumerate(lines, start=1):
         no_backticks = role_with_no_backticks.search(line)
         if no_backticks:
             yield lno, f"role with no backticks: {no_backticks.group(0)!r}"
 
 
-@checker(".rst", severity=2)
-def check_suspicious_backticks_constructs(file, lines):
-    """Check for suspicious constructs with backticks."""
+@checker(".rst")
+def check_backtick_before_role(file, lines):
+    """Search for roles preceded by a backtick.
+
+    Bad: `:fct:`sum`
+    Good: :fct:`sum`
+    """
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
             continue
         if backtick_in_front_of_role.search(line):
             yield lno, "superfluous backtick in front of role"
+
+
+@checker(".rst")
+def check_missing_space_in_hyperlink(file, lines):
+    """Search for hyperlinks missing a space.
+
+    Bad:  `Link text<https://example.com>_`
+    Good: `Link text <https://example.com>_`
+    """
+    for lno, line in enumerate(lines, start=1):
+        if "`" not in line:
+            continue
         for match in seems_hyperlink_re.finditer(line):
             if not match.group(1):
                 yield lno, "missing space before < in hyperlink"
+
+
+@checker(".rst")
+def check_missing_underscore_after_hyperlink(file, lines):
+    """Search for hyperlinks missing underscore after their closing backtick.
+
+    Bad:  `Link text <https://example.com>`
+    Good: `Link text <https://example.com>`_
+    """
+    for lno, line in enumerate(lines, start=1):
+        if "`" not in line:
+            continue
+        for match in seems_hyperlink_re.finditer(line):
             if not match.group(2):
                 yield lno, "missing underscore after closing backtick in hyperlink"
+
+
+@checker(".rst")
+def check_role_with_double_backticks(file, lines):
+    """Search for roles with double backticks.
+
+    Bad:  :fct:``sum``
+    Good: :fct:`sum`
+    """
+    for lno, line in enumerate(lines, start=1):
+        if "`" not in line:
+            continue
         if double_backtick_role.search(line):
             yield lno, "role use a single backtick, double backtick found."
+
+
+@checker(".rst")
+def check_missing_space_before_role(file, lines):
+    """Search for missing spaces before roles.
+
+    Bad:  the:fct:`sum`
+    Good: the :fct:`sum`
+    """
+    for lno, line in enumerate(lines, start=1):
+        if "`" not in line:
+            continue
         if role_glued_with_word.search(line):
             yield lno, "missing space before role"
-        if role_missing_right_column.search(line):
-            yield lno, "role missing column before first backtick."
+
+
+@checker(".rst")
+def check_missing_colon_in_role(file, lines):
+    """Search for missing colons in roles.
+
+    Bad:  :issue`123`
+    Good: :issue:`123`
+    """
+    for lno, line in enumerate(lines, start=1):
+        if role_missing_right_colon.search(line):
+            yield lno, "role missing colon before first backtick."
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_whitespace(file, lines):
-    """Check for whitespace and line length issues."""
-    lno = line = None
+def check_carriage_return(file, lines):
+    r"""Check for carriage returns (\r) in lines."""
     for lno, line in enumerate(lines):
         if "\r" in line:
             yield lno + 1, "\\r in line"
+
+
+@checker(".py", ".rst", rst_only=False)
+def check_horizontal_tab(file, lines):
+    r"""Check for horizontal tabs (\t) in lines."""
+    for lno, line in enumerate(lines):
         if "\t" in line:
             yield lno + 1, "OMG TABS!!!1"
-        if line.rstrip("\n").rstrip(" \t") != line.rstrip("\n"):
+
+
+@checker(".py", ".rst", rst_only=False)
+def check_trailing_whitespace(file, lines):
+    """Check for trailing whitespaces at end of lines."""
+    for lno, line in enumerate(lines):
+        stripped_line = line.rstrip("\n")
+        if stripped_line.rstrip(" \t") != stripped_line:
             yield lno + 1, "trailing whitespace"
-    if line is not None:
-        if not line.endswith("\n"):
-            yield lno, "No newline at end of file (no-newline-at-end-of-file)."
 
 
-@checker(".rst", severity=0, rst_only=False)
-def check_line_length(file, lines):
+@checker(".py", ".rst", rst_only=False)
+def check_missing_final_newline(file, lines):
+    """Check that the last line of the file ends with a newline."""
+    if lines and not lines[-1].endswith("\n"):
+        yield len(lines), "No newline at end of file."
+
+
+@checker(".rst", enabled=False, rst_only=False)
+def check_line_too_long(file, lines):
     """Check for line length; this checker is not run by default."""
     for lno, line in enumerate(lines):
         if len(line) > 81:
@@ -328,10 +457,11 @@ def check_line_length(file, lines):
                 yield lno + 1, "line too long"
 
 
-@checker(".html", severity=2, falsepositives=True, rst_only=False)
+@checker(".html", enabled=False, rst_only=False)
 def check_leaked_markup(file, lines):
-    """Check HTML files for leaked reST markup; this only works if
-    the HTML files have been built.
+    """Check HTML files for leaked reST markup.
+
+    This only works if the HTML files have been built.
     """
     for lno, line in enumerate(lines):
         if leaked_markup_re.search(line):
@@ -374,7 +504,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
         if in_literal is None and is_multiline_non_rst_block(line):
             in_literal = len(re.match(" *", line).group(0))
             block_line_start = lineno
-            assert excluded_lines == []
+            assert not excluded_lines
         elif re.match(r" *\.\. ", line) and type_of_explicit_markup(line) == "comment":
             line = "\n"
         output.append(line)
@@ -402,26 +532,35 @@ triple_backticks = re.compile(
 )
 
 
-@checker(".rst", falsepositives=True, severity=2)
+@checker(".rst", enabled=False)
 def check_triple_backticks(file, lines):
-    """Check for triple backticks.
+    """Check for triple backticks, like ```Point``` (but it's a valid syntax).
 
-    Good: ``Point``
     Bad: ```Point```
+    Good: ``Point``
 
-    But in reality, triple backticks are valid: ```foo``` gets
+    In reality, triple backticks are valid: ```foo``` gets
     rendered as `foo`, it's at least used by Sphinx to document rst
     syntax, but it's really uncommon.
     """
     for lno, line in enumerate(lines):
         match = triple_backticks.search(line)
         if match:
-            yield lno + 1, f"There's no rst syntax using triple backticks"
+            yield lno + 1, "There's no rst syntax using triple backticks"
 
 
-@checker(".rst", severity=1, rst_only=False)
-def check_bad_dedent_in_block(file, lines):
-    """Check for dedent not being enough in code blocks."""
+@checker(".rst", rst_only=False)
+def check_bad_dedent(file, lines):
+    """Check for mis-alignment in indentation in code blocks.
+
+    |A 5 lines block::
+    |
+    |    Hello!
+    |
+    | Looks like another block::
+    |
+    |    But in fact it's not due to the leading space.
+    """
 
     errors = []
 
@@ -438,24 +577,30 @@ def parse_args(argv=None):
     if argv is None:
         argv = sys.argv
     parser = argparse.ArgumentParser(description=__doc__)
+
+    enabled_checkers_names = {
+        checker.name for checker in checkers.values() if checker.enabled
+    }
+
+    class EnableAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values == "all":
+                enabled_checkers_names.update(set(checkers.keys()))
+            else:
+                enabled_checkers_names.update(values.split(","))
+
+    class DisableAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values == "all":
+                enabled_checkers_names.clear()
+            else:
+                enabled_checkers_names.difference_update(values.split(","))
+
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="verbose (print all checked file names)",
-    )
-    parser.add_argument(
-        "-f",
-        dest="false_pos",
-        action="store_true",
-        help="enable checkers that yield many false positives",
-    )
-    parser.add_argument(
-        "-s",
-        "--severity",
-        type=int,
-        help="only show problems with severity >= sev",
-        default=1,
     )
     parser.add_argument(
         "-i",
@@ -467,18 +612,36 @@ def parse_args(argv=None):
     parser.add_argument(
         "-d",
         "--disable",
-        dest="disabled",
-        action="append",
-        help="disable given checks",
-        default=[],
+        action=DisableAction,
+        help='comma-separated list of checks to disable. Give "all" to disable them all. '
+        "Can be used in conjunction with --enable (it's evaluated left-to-right). "
+        '"--disable all --enable trailing-whitespace" can be used to enable a '
+        "single check.",
+    )
+    parser.add_argument(
+        "-e",
+        "--enable",
+        action=EnableAction,
+        help='comma-separated list of checks to enable. Give "all" to enable them all. '
+        "Can be used in conjunction with --disable (it's evaluated left-to-right). "
+        '"--enable all --disable trailing-whitespace" can be used to enable '
+        "all but one check.",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List enabled checkers and exit. "
+        "Can be used to see which checkers would be used with a given set of "
+        "--enable and --disable options.",
     )
     parser.add_argument("paths", default=".", nargs="*")
     args = parser.parse_args(argv[1:])
-    return args
-
-
-def is_disabled(msg, disabled_messages):
-    return any(disabled in msg for disabled in disabled_messages)
+    try:
+        enabled_checkers = {checkers[name] for name in enabled_checkers_names}
+    except KeyError as err:
+        print(f"Unknown checker: {err.args[0]}.")
+        sys.exit(2)
+    return enabled_checkers, args
 
 
 def walk(path, ignore_list):
@@ -502,29 +665,27 @@ def walk(path, ignore_list):
             yield file if file[:2] != "./" else file[2:]
 
 
-def check_text(filename, text, allow_false_positives=False, severity=1, disabled=()):
+def check_text(filename, text, checkers):
     errors = Counter()
     ext = splitext(filename)[1]
+    checkers = {checker for checker in checkers if ext in checker.suffixes}
     lines = text.splitlines(keepends=True)
-    if any(checker.rst_only for checker in checkers[ext]):
+    if any(checker.rst_only for checker in checkers):
         lines_with_rst_only = hide_non_rst_blocks(lines)
-    for checker in checkers[ext]:
-        if checker.falsepositives and not allow_false_positives:
+    for check in checkers:
+        if ext not in check.suffixes:
             continue
-        csev = checker.severity
-        if csev >= severity:
-            for lno, msg in checker(
-                filename, lines_with_rst_only if checker.rst_only else lines
-            ):
-                if not is_disabled(msg, disabled):
-                    print(f"[{csev}] {filename}:{lno}: {msg}")
-                    errors[csev] += 1
+        for lno, msg in check(
+            filename, lines_with_rst_only if check.rst_only else lines
+        ):
+            print(f"{filename}:{lno}: {msg} ({check.name})")
+            errors[check.name] += 1
     return errors
 
 
-def check_file(filename, allow_false_positives=False, severity=1, disabled=()):
+def check_file(filename, checkers):
     ext = splitext(filename)[1]
-    if ext not in checkers:
+    if not any(ext in checker.suffixes for checker in checkers):
         return Counter()
     try:
         with open(filename, encoding="utf-8") as f:
@@ -535,50 +696,49 @@ def check_file(filename, allow_false_positives=False, severity=1, disabled=()):
     except UnicodeDecodeError as err:
         print(f"{filename}: cannot decode as UTF-8: {err}")
         return Counter({4: 1})
-    return check_text(filename, text, allow_false_positives, severity, disabled)
+    return check_text(filename, text, checkers)
 
 
 def main(argv=None):
-    args = parse_args(argv)
+    enabled_checkers, args = parse_args(argv)
+    if args.list:
+        if not enabled_checkers:
+            print("No checkers selected.")
+            return 0
+        print(f"{len(enabled_checkers)} checkers selected:")
+        for check in sorted(enabled_checkers, key=lambda fct: fct.name):
+            if args.verbose:
+                print(f"- {check.name}: {check.__doc__}")
+            else:
+                print(f"- {check.name}: {check.__doc__.splitlines()[0]}")
+        if not args.verbose:
+            print("\n(Use `--list --verbose` to know more about each check)")
+        return 0
 
     for path in args.paths:
         if not exists(path):
             print(f"Error: path {path} does not exist")
             return 2
 
-    todo = list(chain.from_iterable(walk(path, args.ignore) for path in args.paths))
-
-    configured_check_file = partial(
-        check_file,
-        allow_false_positives=args.false_pos,
-        severity=args.severity,
-        disabled=args.disabled,
-    )
+    todo = [
+        (path, enabled_checkers)
+        for path in chain.from_iterable(walk(path, args.ignore) for path in args.paths)
+    ]
 
     if len(todo) < 8:
-        results = map(configured_check_file, todo)
+        results = starmap(check_file, todo)
     else:
         with multiprocessing.Pool() as pool:
-            results = pool.map(configured_check_file, todo)
+            results = pool.starmap(check_file, todo)
             pool.close()
             pool.join()
 
     count = reduce(Counter.__add__, results)
 
-    if args.verbose:
-        print()
     if not count:
-        if args.severity > 1:
-            print(f"No problems with severity >= {args.severity} found.")
-        else:
-            print("No problems found.")
-    else:
-        for severity in sorted(count):
-            number = count[severity]
-            s = "s" if number > 1 else ""
-            print(f"{number} problem{s} with severity {severity} found.")
-    sys.exit(int(bool(count)))
+        print("No problems found.")
+    return int(bool(count))
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
