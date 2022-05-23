@@ -177,7 +177,7 @@ def checker(*suffixes, **kwds):
 
 
 @checker(".py", rst_only=False)
-def check_python_syntax(file, lines):
+def check_python_syntax(file, lines, options=None):
     """Search invalid syntax in Python examples."""
     code = "".join(lines)
     if "\r" in code:
@@ -198,7 +198,7 @@ role_missing_closing_backtick = re.compile(rf"({role_head}`[^`]+?)[^`]*$")
 
 
 @checker(".rst")
-def check_missing_backtick_after_role(file, lines):
+def check_missing_backtick_after_role(file, lines, options=None):
     """Search for roles missing their closing backticks.
 
     Bad:  :fct:`foo
@@ -214,7 +214,7 @@ def check_missing_backtick_after_role(file, lines):
 
 
 @checker(".rst")
-def check_missing_space_after_literal(file, lines):
+def check_missing_space_after_literal(file, lines, options=None):
     r"""Search for inline literals immediately followed by a character.
 
     Bad:  ``items``s
@@ -259,7 +259,7 @@ backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
 
 @checker(".rst", enabled=False)
-def check_default_role(file, lines):
+def check_default_role(file, lines, options=None):
     """Search for default roles (but they are allowed in many projects).
 
     Bad:  `print`
@@ -271,7 +271,7 @@ def check_default_role(file, lines):
 
 
 @checker(".rst")
-def check_directive_with_three_dots(file, lines):
+def check_directive_with_three_dots(file, lines, options=None):
     """Search for directives with three dots instead of two.
 
     Bad:  ... versionchanged:: 3.6
@@ -283,7 +283,7 @@ def check_directive_with_three_dots(file, lines):
 
 
 @checker(".rst")
-def check_directive_missing_colons(file, lines):
+def check_directive_missing_colons(file, lines, options=None):
     """Search for directive wrongly typed as comments.
 
     Bad:  .. versionchanged 3.6.
@@ -295,7 +295,7 @@ def check_directive_missing_colons(file, lines):
 
 
 @checker(".rst")
-def check_missing_space_after_role(file, lines):
+def check_missing_space_after_role(file, lines, options=None):
     r"""Search for roles immediately followed by a character.
 
     Bad:  :exc:`Exception`s.
@@ -313,7 +313,7 @@ def check_missing_space_after_role(file, lines):
 
 
 @checker(".rst")
-def check_role_without_backticks(file, lines):
+def check_role_without_backticks(file, lines, options=None):
     """Search roles without backticks.
 
     Bad:  :func:pdb.main
@@ -326,7 +326,7 @@ def check_role_without_backticks(file, lines):
 
 
 @checker(".rst")
-def check_backtick_before_role(file, lines):
+def check_backtick_before_role(file, lines, options=None):
     """Search for roles preceded by a backtick.
 
     Bad: `:fct:`sum`
@@ -340,7 +340,7 @@ def check_backtick_before_role(file, lines):
 
 
 @checker(".rst")
-def check_missing_space_in_hyperlink(file, lines):
+def check_missing_space_in_hyperlink(file, lines, options=None):
     """Search for hyperlinks missing a space.
 
     Bad:  `Link text<https://example.com>_`
@@ -355,7 +355,7 @@ def check_missing_space_in_hyperlink(file, lines):
 
 
 @checker(".rst")
-def check_missing_underscore_after_hyperlink(file, lines):
+def check_missing_underscore_after_hyperlink(file, lines, options=None):
     """Search for hyperlinks missing underscore after their closing backtick.
 
     Bad:  `Link text <https://example.com>`
@@ -370,7 +370,7 @@ def check_missing_underscore_after_hyperlink(file, lines):
 
 
 @checker(".rst")
-def check_role_with_double_backticks(file, lines):
+def check_role_with_double_backticks(file, lines, options=None):
     """Search for roles with double backticks.
 
     Bad:  :fct:``sum``
@@ -384,7 +384,7 @@ def check_role_with_double_backticks(file, lines):
 
 
 @checker(".rst")
-def check_missing_space_before_role(file, lines):
+def check_missing_space_before_role(file, lines, options=None):
     """Search for missing spaces before roles.
 
     Bad:  the:fct:`sum`
@@ -398,7 +398,7 @@ def check_missing_space_before_role(file, lines):
 
 
 @checker(".rst")
-def check_missing_colon_in_role(file, lines):
+def check_missing_colon_in_role(file, lines, options=None):
     """Search for missing colons in roles.
 
     Bad:  :issue`123`
@@ -410,7 +410,7 @@ def check_missing_colon_in_role(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_carriage_return(file, lines):
+def check_carriage_return(file, lines, options=None):
     r"""Check for carriage returns (\r) in lines."""
     for lno, line in enumerate(lines):
         if "\r" in line:
@@ -418,7 +418,7 @@ def check_carriage_return(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_horizontal_tab(file, lines):
+def check_horizontal_tab(file, lines, options=None):
     r"""Check for horizontal tabs (\t) in lines."""
     for lno, line in enumerate(lines):
         if "\t" in line:
@@ -426,7 +426,7 @@ def check_horizontal_tab(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_trailing_whitespace(file, lines):
+def check_trailing_whitespace(file, lines, options=None):
     """Check for trailing whitespaces at end of lines."""
     for lno, line in enumerate(lines):
         stripped_line = line.rstrip("\n")
@@ -435,30 +435,33 @@ def check_trailing_whitespace(file, lines):
 
 
 @checker(".py", ".rst", rst_only=False)
-def check_missing_final_newline(file, lines):
+def check_missing_final_newline(file, lines, options=None):
     """Check that the last line of the file ends with a newline."""
     if lines and not lines[-1].endswith("\n"):
         yield len(lines), "No newline at end of file."
 
 
-@checker(".rst", enabled=False, rst_only=False)
-def check_line_too_long(file, lines):
+@checker(".rst", enabled=False, rst_only=True)
+def check_line_too_long(file, lines, options=None):
     """Check for line length; this checker is not run by default."""
     for lno, line in enumerate(lines):
-        if len(line) > 81:
-            # don't complain about tables, links and function signatures
-            if (
-                line.lstrip()[0] not in "+|"
-                and "http://" not in line
-                and not line.lstrip().startswith(
-                    (".. function", ".. method", ".. cfunction")
-                )
-            ):
-                yield lno + 1, "line too long"
+        # Beware, in `line` we have the trailing newline.
+        if len(line) - 1 > options.max_line_length:
+            if line.lstrip()[0] in "+|":
+                continue  # ignore wide tables
+            if re.match(r"^\s*\W*(:(\w+:)+)?`.*`\W*$", line):
+                continue  # ignore long interpreted text
+            if re.match(r"^\s*\.\. ", line):
+                continue  # ignore directives and hyperlink targets
+            if re.match(r"^\s*__ ", line):
+                continue  # ignore anonymous hyperlink targets
+            if re.match(r"^\s*``[^`]+``$", line):
+                continue  # ignore a very long literal string
+            yield lno + 1, f"Line too long ({len(line)-1}/{options.max_line_length})"
 
 
 @checker(".html", enabled=False, rst_only=False)
-def check_leaked_markup(file, lines):
+def check_leaked_markup(file, lines, options=None):
     """Check HTML files for leaked reST markup.
 
     This only works if the HTML files have been built.
@@ -533,7 +536,7 @@ triple_backticks = re.compile(
 
 
 @checker(".rst", enabled=False)
-def check_triple_backticks(file, lines):
+def check_triple_backticks(file, lines, options=None):
     """Check for triple backticks, like ```Point``` (but it's a valid syntax).
 
     Bad: ```Point```
@@ -550,7 +553,7 @@ def check_triple_backticks(file, lines):
 
 
 @checker(".rst", rst_only=False)
-def check_bad_dedent(file, lines):
+def check_bad_dedent(file, lines, options=None):
     """Check for mis-alignment in indentation in code blocks.
 
     |A 5 lines block::
@@ -634,6 +637,12 @@ def parse_args(argv=None):
         "Can be used to see which checkers would be used with a given set of "
         "--enable and --disable options.",
     )
+    parser.add_argument(
+        "--max-line-length",
+        help="Maximum number of characters on a single line.",
+        default=80,
+        type=int,
+    )
     parser.add_argument("paths", default=".", nargs="*")
     args = parser.parse_args(argv[1:])
     try:
@@ -665,7 +674,21 @@ def walk(path, ignore_list):
             yield file if file[:2] != "./" else file[2:]
 
 
-def check_text(filename, text, checkers):
+class CheckersOptions:
+    """Configuration options for checkers."""
+
+    max_line_length = 80
+
+    @classmethod
+    def from_argparse(cls, namespace):
+        options = cls()
+        options.max_line_length = namespace.max_line_length
+        return options
+
+
+def check_text(filename, text, checkers, options=None):
+    if options is None:
+        options = CheckersOptions()
     errors = Counter()
     ext = splitext(filename)[1]
     checkers = {checker for checker in checkers if ext in checker.suffixes}
@@ -676,14 +699,14 @@ def check_text(filename, text, checkers):
         if ext not in check.suffixes:
             continue
         for lno, msg in check(
-            filename, lines_with_rst_only if check.rst_only else lines
+            filename, lines_with_rst_only if check.rst_only else lines, options
         ):
             print(f"{filename}:{lno}: {msg} ({check.name})")
             errors[check.name] += 1
     return errors
 
 
-def check_file(filename, checkers):
+def check_file(filename, checkers, options: CheckersOptions = None):
     ext = splitext(filename)[1]
     if not any(ext in checker.suffixes for checker in checkers):
         return Counter()
@@ -696,11 +719,12 @@ def check_file(filename, checkers):
     except UnicodeDecodeError as err:
         print(f"{filename}: cannot decode as UTF-8: {err}")
         return Counter({4: 1})
-    return check_text(filename, text, checkers)
+    return check_text(filename, text, checkers, options)
 
 
 def main(argv=None):
     enabled_checkers, args = parse_args(argv)
+    options = CheckersOptions.from_argparse(args)
     if args.list:
         if not enabled_checkers:
             print("No checkers selected.")
@@ -721,7 +745,7 @@ def main(argv=None):
             return 2
 
     todo = [
-        (path, enabled_checkers)
+        (path, enabled_checkers, options)
         for path in chain.from_iterable(walk(path, args.ignore) for path in args.paths)
     ]
 
