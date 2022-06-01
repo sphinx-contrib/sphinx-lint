@@ -244,11 +244,13 @@ def paragraphs(lines):
     paragraph_lno = 1
     for lno, line in enumerate(lines, start=1):
         if line != "\n":
+            if not paragraph:
+                # save the lno of the first line of the para
+                paragraph_lno = lno
             paragraph.append(line)
         elif paragraph:
             yield paragraph_lno, "".join(paragraph)
             paragraph = []
-            paragraph_lno = lno
     if paragraph:
         yield paragraph_lno, "".join(paragraph)
 
