@@ -8,6 +8,7 @@
 # https://github.com/python/cpython Doc
 # https://github.com/spyder-ide/spyder-docs doc
 # https://github.com/sympy/sympy doc
+# https://github.com/sphinx-doc/sphinx doc
 
 grep '^# https://' "$0" |
     while read -r _ repo directory
