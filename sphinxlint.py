@@ -661,6 +661,8 @@ def walk(path, ignore_list):
     It also allows giving a file, thus yielding just that file.
     """
     if isfile(path):
+        if path in ignore_list:
+            return
         yield path if path[:2] != "./" else path[2:]
         return
     for root, dirs, files in os.walk(path):
