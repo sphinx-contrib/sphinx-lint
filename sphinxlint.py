@@ -318,7 +318,8 @@ default_role_re = re.compile(
     (?=       # Inline markup end-strings must
         $|    # end a text block or
         \s|   # be immediately followed by whitespace,
-        [-.,:;!?\/'")]}>]|  # one of the ASCII characters
+        \x00|
+        [-.,:;!?/'")]}>]|  # one of the ASCII characters
         [\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
     )
 """,
