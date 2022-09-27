@@ -290,7 +290,8 @@ QUOTE_PAIRS = [
 QUOTE_PAIRS_NEGATIVE_LOOKBEHIND = "(?<!" + (
     "|".join(f"{re.escape(left)}`{re.escape(right)}" for left, right in QUOTE_PAIRS) +
     "|" +
-    "|".join(f"{re.escape(openers[i])}`{re.escape(closers[i])}" for i in range(len(openers)))
+    "|".join(f"{opener}`{closer}" for opener,closer in zip(map(re.escape, openers),
+                                                           map(re.escape, closers)))
 ) + ")"
 
 role_body = rf"([^`]|\s`+|\\`|:{simplename}:`([^`]|\s`+|\\`)+`)+"
