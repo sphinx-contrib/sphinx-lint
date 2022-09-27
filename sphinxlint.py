@@ -310,10 +310,10 @@ default_role_re = re.compile(
         [\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
     )
     (?P<default_role>`        # Default role start
-    [^`\s]    # Inline markup start-strings must be immediately followed by non-whitespace.
-              # The inline markup end-string must be separated by at least one character from the start-string.
-    """ + QUOTE_PAIRS_NEGATIVE_LOOKBEHIND + r"""
-    [^`]*
+        [^`\s]    # Inline markup start-strings must be immediately followed by non-whitespace.
+                  # The inline markup end-string must be separated by at least one character from the start-string.
+        """ + QUOTE_PAIRS_NEGATIVE_LOOKBEHIND + r"""
+        [^`]*
     `)        # Default role end
     (?=       # Inline markup end-strings must
         $|    # end a text block or
