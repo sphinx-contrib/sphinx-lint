@@ -20,6 +20,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 requires-python = ">= 3.7"
+dependencies = [
+    "regex",
+]
 dynamic = ["version"]
 
 [project.urls]
