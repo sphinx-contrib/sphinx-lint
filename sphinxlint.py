@@ -302,7 +302,7 @@ backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 # https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#inline-markup-recognition-rules
 default_role_re = re.compile(
     r"""
-    (?<!\x00) # Both, inline markup start-string and end-string must not be preceded by an unescaped backslash
+    (?<!\x00) # Both inline markup start-string and end-string must not be preceded by an unescaped backslash
     (?<=      # Inline markup start-strings must:
         ^|           # start a text block
         \s|          # or be immediately preceded by whitespace,
