@@ -319,7 +319,7 @@ default_role_re = re.compile(
         $|    # end a text block or
         \s|   # be immediately followed by whitespace,
         \x00|
-        [-.,:;!?/'")]}>]|  # one of the ASCII characters
+        [-.,:;!?/'")\]}>]|  # one of the ASCII characters
         [\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
     )
 """,
