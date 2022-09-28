@@ -28,7 +28,7 @@ jobs:
       - name: Install pytest
         run: python -m pip install --upgrade pytest
       - name: Install sphinx-lint to pull dependencies
-        run: python -m pip install .
+        run: python -m pip install -v .
       - name: Pre-populate tests/fixtures/xpass directory
         run: sh populate-xpass.sh
       - name: run tests
