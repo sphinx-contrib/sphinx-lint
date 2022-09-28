@@ -236,7 +236,26 @@ def check_missing_space_after_literal(file, lines, options=None):
 
 
 def escape2null(text):
-    """Return a string with escape-backslashes converted to nulls."""
+    """Return a string with escape-backslashes converted to nulls.
+
+    It ease telling appart escaping-backslashes and normal backslashes
+    in regex.
+
+    For example : \\\\\\` is hard to match, even with the eyes, it's
+    hard to know which backslash escapes which backslash, and it's
+    very hard to know if the backtick is escaped.
+
+    By replacing the escaping backslashes with another character they
+    become easy to spot:
+
+    0\0\0\`
+
+    (This example uses zeros for readability but the function actually
+    uses null bytes, \x00.)
+
+    So we easily see that the backtick is **not** escaped: it's
+    preceded by a backslash, not an escaping backslash.
+    """
     parts = []
     start = 0
     while True:
