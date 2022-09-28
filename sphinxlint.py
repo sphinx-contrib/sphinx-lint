@@ -22,12 +22,8 @@ from functools import reduce
 from itertools import chain, starmap
 from os.path import exists, isfile, join, splitext
 
-try:
-    import regex as re
-except ImportError:
-    # Temporary pretty workaround: https://github.com/pypa/setuptools/issues/3612
-    print("Please pip install regex.")
-    sys.exit(0)
+import regex as re
+
 
 # The following chars groups are from docutils:
 closing_delimiters = "\\\\.,;!?"
