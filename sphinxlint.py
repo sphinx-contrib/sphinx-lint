@@ -16,12 +16,14 @@ __version__ = "0.6.1"
 import argparse
 import multiprocessing
 import os
-import re
 import sys
 from collections import Counter
 from functools import reduce
 from itertools import chain, starmap
 from os.path import exists, isfile, join, splitext
+
+import regex as re
+
 
 # The following chars groups are from docutils:
 closing_delimiters = "\\\\.,;!?"
@@ -47,6 +49,7 @@ delimiters = (
     "\ufe6b\uff01-\uff03\uff05-\uff07\uff0a\uff0c-\uff0f\uff1a"
     "\uff1b\uff1f\uff20\uff3c\uff61\uff64\uff65"
 )
+
 closers = (
     "\"')>\\]}\u0f3b\u0f3d\u169c\u2046\u207e\u208e\u232a\u2769"
     "\u276b\u276d\u276f\u2771\u2773\u2775\u27c6\u27e7\u27e9\u27eb"
@@ -59,6 +62,7 @@ closers = (
     "\u201b\u201f\xab\u2018\u201c\u2039\u2e02\u2e04\u2e09\u2e0c"
     "\u2e1c\u2e20\u201a\u201e"
 )
+
 openers = (
     "\"'(<\\[{\u0f3a\u0f3c\u169b\u2045\u207d\u208d\u2329\u2768"
     "\u276a\u276c\u276e\u2770\u2772\u2774\u27c5\u27e6\u27e8\u27ea"
@@ -71,7 +75,6 @@ openers = (
     "\u201a\u201e\xbb\u2019\u201d\u203a\u2e03\u2e05\u2e0a\u2e0d"
     "\u2e1d\u2e21\u201b\u201f"
 )
-
 
 # fmt: off
 directives = [
@@ -104,6 +107,7 @@ directives = [
 all_directives = "(" + "|".join(directives) + ")"
 before_role = r"(^|(?<=[\s(/'{\[*-]))"
 simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
+role_tag = rf":{simplename}:"
 role_head = rf"({before_role}:{simplename}:)"  # A role, with a clean start
 
 # Find comments that look like a directive, like:
@@ -146,10 +150,6 @@ role_with_no_backticks = re.compile(rf"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)
 # Find role missing middle colon, like:
 #    The :issue`123` is ...
 role_missing_right_colon = re.compile(rf"(^|\s):{simplename}`(?!`)")
-
-# TODO: cover more cases
-# https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#toc-entry-44
-default_role_re = re.compile(r"(^| )`\w([^`]*?\w)?`($| )")
 
 seems_hyperlink_re = re.compile(r"`[^`]+?(\s?)<https?://[^`]+>`(_?)")
 
@@ -236,6 +236,39 @@ def check_missing_space_after_literal(file, lines, options=None):
                 )
 
 
+def escape2null(text):
+    """Return a string with escape-backslashes converted to nulls.
+
+    It ease telling appart escaping-backslashes and normal backslashes
+    in regex.
+
+    For example : \\\\\\` is hard to match, even with the eyes, it's
+    hard to know which backslash escapes which backslash, and it's
+    very hard to know if the backtick is escaped.
+
+    By replacing the escaping backslashes with another character they
+    become easy to spot:
+
+    0\0\0\`
+
+    (This example uses zeros for readability but the function actually
+    uses null bytes, \x00.)
+
+    So we easily see that the backtick is **not** escaped: it's
+    preceded by a backslash, not an escaping backslash.
+    """
+    parts = []
+    start = 0
+    while True:
+        found = text.find('\\', start)
+        if found == -1:
+            parts.append(text[start:])
+            return ''.join(parts)
+        parts.append(text[start:found])
+        parts.append('\x00' + text[found+1:found+2])
+        start = found + 2               # skip character after escape
+
+
 def paragraphs(lines):
     """Yield (paragraph_line_no, paragraph_text) pairs describing
     paragraphs of the given lines.
@@ -255,9 +288,62 @@ def paragraphs(lines):
         yield paragraph_lno, "".join(paragraph)
 
 
+QUOTE_PAIRS = [
+    '»»',  # Swedish
+    '‘‚',  # Albanian/Greek/Turkish
+    '’’',  # Swedish
+    '‚‘',  # German
+    '‚’',  # Polish
+    '“„',  # Albanian/Greek/Turkish
+    '„“',  # German
+    '„”',  # Polish
+    '””',  # Swedish
+    '››',  # Swedish
+    "''",  # ASCII
+    '""',  # ASCII
+    "<>",  # ASCII
+    "()",  # ASCII
+    "[]",  # ASCII
+    "{}",  # ASCII
+]
+
+QUOTE_PAIRS_NEGATIVE_LOOKBEHIND = "(?<!" + (
+    "|".join(f"{re.escape(left)}`{re.escape(right)}" for left, right in QUOTE_PAIRS) +
+    "|" +
+    "|".join(f"{opener}`{closer}" for opener,closer in zip(map(re.escape, openers),
+                                                           map(re.escape, closers)))
+) + ")"
+
 role_body = rf"([^`]|\s`+|\\`|:{simplename}:`([^`]|\s`+|\\`)+`)+"
 normal_role = f":{simplename}:`{role_body}`"
 backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
+
+
+# https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#inline-markup-recognition-rules
+default_role_re = re.compile(
+    r"""
+    (?<!\x00) # Both inline markup start-string and end-string must not be preceded by an unescaped backslash
+    (?<=      # Inline markup start-strings must:
+        ^|           # start a text block
+        \s|          # or be immediately preceded by whitespace,
+        [-:/'"<([{]| # one of the ASCII characters
+        [\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
+    )
+    (?P<default_role>`        # Default role start
+        [^`\s]    # Inline markup start-strings must be immediately followed by non-whitespace.
+                  # The inline markup end-string must be separated by at least one character from the start-string.
+        """ + QUOTE_PAIRS_NEGATIVE_LOOKBEHIND + r"""
+        [^`]*
+    `)        # Default role end
+    (?=       # Inline markup end-strings must
+        $|    # end a text block or
+        \s|   # be immediately followed by whitespace,
+        \x00|
+        [-.,:;!?/'")\]}>]|  # one of the ASCII characters
+        [\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
+    )
+""",
+   flags=re.VERBOSE)
 
 
 @checker(".rst", enabled=False)
@@ -268,7 +354,17 @@ def check_default_role(file, lines, options=None):
     Good: ``print``
     """
     for lno, line in enumerate(lines, start=1):
-        if default_role_re.search(line):
+        line = escape2null(line)
+        match = default_role_re.search(line)
+        if match:
+            before_match = line[:match.start()]
+            after_match = line[match.end():]
+            if re.search(role_tag + "$", before_match):
+                # It's not a default role: it starts with a tag.
+                continue
+            if re.search("^" + role_tag, after_match):
+                # It's not a default role: it ends with a tag.
+                continue
             yield lno, "default role used (hint: for inline literals, use double backticks)"
 
 
