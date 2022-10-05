@@ -237,7 +237,7 @@ def check_missing_space_after_literal(file, lines, options=None):
 
 
 def escape2null(text):
-    """Return a string with escape-backslashes converted to nulls.
+    r"""Return a string with escape-backslashes converted to nulls.
 
     It ease telling appart escaping-backslashes and normal backslashes
     in regex.
