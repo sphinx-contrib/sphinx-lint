@@ -10,7 +10,7 @@
 
 """Sphinx rst linter."""
 
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import argparse
 import multiprocessing
@@ -394,6 +394,7 @@ def check_default_role(file, lines, options=None):
     """
     for lno, line in enumerate(lines, start=1):
         line = escape2null(line)
+        line = inline_literal_re.sub("", line)
         match = interpreted_text_re.search(line)
         if match:
             before_match = line[: match.start()]
