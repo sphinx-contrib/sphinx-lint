@@ -1,6 +1,24 @@
 #!/bin/sh
 
-# Repos known to pass:
+# Helper script to generate more tests using repos from friends.
+#
+# Once downloaded they can be tested using pytest:
+#
+#    python -m pytest
+#
+# It's possible to filter by project name like:
+#
+#    python -m pytest -k devguide
+
+
+# Repos known to pass are listed below in the following format:
+#
+#     URL DOC_FOLDER SPHINXLINT_FLAGS...
+#
+# (If the doc is at the root of the repo: use a dot as a folder name.)
+
+# Yes the following comment **is** the list of repos to download, you
+# can edit it.
 
 # https://github.com/jazzband/django-oauth-toolkit docs
 # https://github.com/neo4j/neo4j-python-driver docs
