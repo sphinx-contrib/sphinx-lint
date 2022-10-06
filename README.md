@@ -42,9 +42,22 @@ To avoid false positives, some rules are skipped if we're in a table.
 
 ## Releasing
 
-One should use the `download-more-tests.sh` script before running tests
-before releasing, to avoid creating a release introducing false
-positives.
+First test with friends projects by running:
+
+    sh download-more-tests.sh
+    python -m pytest
+
+Bump the version in `sphinxlint.py`, commit, tag, push:
+
+    git tag v0.6.5
+    git push
+    git push --tags
+
+To release on PyPI run:
+
+    python -m pip install --upgrade build twine
+    python -m build
+    python -m twine upload dist/*
 
 
 ## License
