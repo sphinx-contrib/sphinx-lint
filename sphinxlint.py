@@ -390,7 +390,8 @@ normal_role_re = re.compile(
     f":{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
 )
 backtick_in_front_of_role = re.compile(
-    rf"(^|\s)`:{SIMPLENAME}:{interpreted_text_re.pattern}"
+    rf"(^|\s)`:{SIMPLENAME}:{interpreted_text_re.pattern}",
+    flags=re.VERBOSE|re.DOTALL
 )
 
 
@@ -402,8 +403,8 @@ def check_default_role(file, lines, options=None):
     Good: ``print``
     """
     for lno, line in enumerate(lines, start=1):
+        line = clean_paragraph(line)
         line = escape2null(line)
-        line = inline_literal_re.sub("", line)
         match = interpreted_text_re.search(line)
         if match:
             before_match = line[: match.start()]
