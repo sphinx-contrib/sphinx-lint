@@ -6,6 +6,7 @@
 # https://github.com/neo4j/neo4j-python-driver docs
 # https://github.com/pandas-dev/pandas doc
 # https://github.com/python/cpython Doc
+# https://github.com/python/devguide/
 # https://github.com/spyder-ide/spyder-docs doc
 # https://github.com/sympy/sympy doc
 # https://github.com/sphinx-doc/sphinx doc
@@ -16,13 +17,18 @@ grep '^# https://' "$0" |
         name="$(basename "$repo")"
         if ! [ -d "tests/fixtures/friends/$name" ]
         then
-            git clone --depth 1 --sparse --filter=blob:none "$repo" "tests/fixtures/friends/$name" &&
-            (
-                cd "tests/fixtures/friends/$name" || exit
-                rm *  # Removes files at root of repo (READMEs, conftest.py, ...)
-                git sparse-checkout init --cone
-                git sparse-checkout set "$directory"
-            )
+            if [ -n "$directory" ]
+            then
+                git clone --depth 1 --sparse --filter=blob:none "$repo" "tests/fixtures/friends/$name" &&
+                    (
+                        cd "tests/fixtures/friends/$name" || exit
+                        rm *  # Removes files at root of repo (READMEs, conftest.py, ...)
+                        git sparse-checkout init --cone
+                        git sparse-checkout set "$directory"
+                    )
+            else
+                git clone --depth 1 "$repo" "tests/fixtures/friends/$name"
+            fi
         fi
     done
 
