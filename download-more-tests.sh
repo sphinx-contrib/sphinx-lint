@@ -14,11 +14,11 @@ grep '^# https://' "$0" |
     while read -r _ repo directory
     do
         name="$(basename "$repo")"
-        if ! [ -d "tests/fixtures/xpass/$name" ]
+        if ! [ -d "tests/fixtures/friends/$name" ]
         then
-            git clone --depth 1 --sparse --filter=blob:none "$repo" "tests/fixtures/xpass/$name" &&
+            git clone --depth 1 --sparse --filter=blob:none "$repo" "tests/fixtures/friends/$name" &&
             (
-                cd "tests/fixtures/xpass/$name" || exit
+                cd "tests/fixtures/friends/$name" || exit
                 rm *  # Removes files at root of repo (READMEs, conftest.py, ...)
                 git sparse-checkout init --cone
                 git sparse-checkout set "$directory"
@@ -28,4 +28,4 @@ grep '^# https://' "$0" |
 
 # Remove exceptions:
 
-rm -f tests/fixtures/xpass/cpython/Doc/README.rst
+rm -f tests/fixtures/friends/cpython/Doc/README.rst

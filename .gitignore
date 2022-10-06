@@ -5,3 +5,4 @@ __pycache__/
 .envrc
 .tox/
 .venv/
+tests/fixtures/friends/

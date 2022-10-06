@@ -42,7 +42,7 @@ To avoid false positives, some rules are skipped if we're in a table.
 
 ## Releasing
 
-One should use the `populate-xpass.sh` script before running tests
+One should use the `download-more-tests.sh` script before running tests
 before releasing, to avoid creating a release introducing false
 positives.
 
