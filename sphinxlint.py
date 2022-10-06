@@ -631,6 +631,8 @@ def is_multiline_non_rst_block(line):
         return True
     if re.match(r"^ *.. productionlist::", line):
         return True
+    if re.match(r"^ *\.\. ", line) and type_of_explicit_markup(line) == "comment":
+        return True
     return False
 
 
@@ -659,8 +661,8 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
             in_literal = len(re.match(" *", line).group(0))
             block_line_start = lineno
             assert not excluded_lines
-        elif re.match(r" *\.\. ", line) and type_of_explicit_markup(line) == "comment":
-            line = "\n"
+            if re.match(r" *\.\. ", line) and type_of_explicit_markup(line) == "comment":
+                line = "\n"
         output.append(line)
     if excluded_lines and hidden_block_cb:
         hidden_block_cb(block_line_start, "".join(excluded_lines))
@@ -669,6 +671,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
 
 def type_of_explicit_markup(line):
     """Tell apart various explicit markup blocks."""
+    line = line.lstrip()
     if re.match(rf"\.\. {ALL_DIRECTIVES}::", line):
         return "directive"
     if re.match(r"\.\. \[[0-9]+\] ", line):
