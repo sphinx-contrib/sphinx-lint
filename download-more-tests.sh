@@ -5,19 +5,19 @@
 # https://github.com/jazzband/django-oauth-toolkit docs
 # https://github.com/neo4j/neo4j-python-driver docs
 # https://github.com/pandas-dev/pandas doc
-# https://github.com/python/cpython Doc
-# https://github.com/python/devguide/
-# https://github.com/spyder-ide/spyder-docs doc
+# https://github.com/python/cpython Doc --enable default-role
+# https://github.com/python/devguide/ . --enable default-role
+# https://github.com/spyder-ide/spyder-docs doc --enable all --disable line-too-long
 # https://github.com/sympy/sympy doc
-# https://github.com/sphinx-doc/sphinx doc
+# https://github.com/sphinx-doc/sphinx doc --enable line-too-long --max-line-length 85
 
 grep '^# https://' "$0" |
-    while read -r _ repo directory
+    while read -r _ repo directory flags
     do
         name="$(basename "$repo")"
         if ! [ -d "tests/fixtures/friends/$name" ]
         then
-            if [ -n "$directory" ]
+            if [ "$directory" != "." ]
             then
                 git clone --depth 1 --sparse --filter=blob:none "$repo" "tests/fixtures/friends/$name" &&
                     (
@@ -30,6 +30,7 @@ grep '^# https://' "$0" |
                 git clone --depth 1 "$repo" "tests/fixtures/friends/$name"
             fi
         fi
+        printf "%s\n" "$flags" > "tests/fixtures/friends/$name/flags"
     done
 
 # Remove exceptions:
