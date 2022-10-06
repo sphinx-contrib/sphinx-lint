@@ -223,10 +223,10 @@ def check_missing_space_after_literal(file, lines, options=None):
     for paragraph_lno, paragraph in paragraphs(lines):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
-        paragraph_without_roles = re.sub(normal_role, "", paragraph).replace("````", "")
-        for role in re.finditer(
-            "``.+?``(?!`).", paragraph_without_roles, flags=re.DOTALL
-        ):
+        paragraph = escape2null(paragraph)
+        paragraph = inline_literal_re.sub("", paragraph)
+        paragraph = normal_role_re.sub("", paragraph)
+        for role in re.finditer("``.+?``(?!`).", paragraph, flags=re.DOTALL):
             if not re.match(end_string_suffix, role.group(0)[-1]):
                 error_offset = paragraph[: role.start()].count("\n")
                 yield (
@@ -234,6 +234,27 @@ def check_missing_space_after_literal(file, lines, options=None):
                     "inline literal missing "
                     f"(escaped) space after literal: {role.group(0)!r}",
                 )
+
+
+@checker(".rst")
+def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
+    r"""Search for unbalanced inline literals delimiters.
+
+    Bad:  ``hello`` world``
+    Good: ``hello`` world
+    """
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if paragraph.count("|") > 4:
+            return  # we don't handle tables yet.
+        paragraph = escape2null(paragraph)
+        paragraph = inline_literal_re.sub("", paragraph)
+        paragraph = normal_role_re.sub("", paragraph)
+        for lone_double_backtick in re.finditer("(?<!`)``(?!`)", paragraph):
+            error_offset = paragraph[: lone_double_backtick.start()].count("\n")
+            yield (
+                paragraph_lno + error_offset,
+                "found an unbalanced inline literal markup.",
+            )
 
 
 def escape2null(text):
@@ -260,13 +281,13 @@ def escape2null(text):
     parts = []
     start = 0
     while True:
-        found = text.find('\\', start)
+        found = text.find("\\", start)
         if found == -1:
             parts.append(text[start:])
-            return ''.join(parts)
+            return "".join(parts)
         parts.append(text[start:found])
-        parts.append('\x00' + text[found+1:found+2])
-        start = found + 2               # skip character after escape
+        parts.append("\x00" + text[found + 1 : found + 2])
+        start = found + 2  # skip character after escape
 
 
 def paragraphs(lines):
@@ -289,16 +310,16 @@ def paragraphs(lines):
 
 
 QUOTE_PAIRS = [
-    '»»',  # Swedish
-    '‘‚',  # Albanian/Greek/Turkish
-    '’’',  # Swedish
-    '‚‘',  # German
-    '‚’',  # Polish
-    '“„',  # Albanian/Greek/Turkish
-    '„“',  # German
-    '„”',  # Polish
-    '””',  # Swedish
-    '››',  # Swedish
+    "»»",  # Swedish
+    "‘‚",  # Albanian/Greek/Turkish
+    "’’",  # Swedish
+    "‚‘",  # German
+    "‚’",  # Polish
+    "“„",  # Albanian/Greek/Turkish
+    "„“",  # German
+    "„”",  # Polish
+    "””",  # Swedish
+    "››",  # Swedish
     "''",  # ASCII
     '""',  # ASCII
     "<>",  # ASCII
@@ -307,21 +328,21 @@ QUOTE_PAIRS = [
     "{}",  # ASCII
 ]
 
-QUOTE_PAIRS_NEGATIVE_LOOKBEHIND = "(?<!" + (
-    "|".join(f"{re.escape(left)}`{re.escape(right)}" for left, right in QUOTE_PAIRS) +
-    "|" +
-    "|".join(f"{opener}`{closer}" for opener,closer in zip(map(re.escape, openers),
-                                                           map(re.escape, closers)))
-) + ")"
+QUOTE_PAIRS_NEGATIVE_LOOKBEHIND = (
+    "(?<!"
+    + "|".join(f"{re.escape(pair[0])}`{re.escape(pair[1])}" for pair in QUOTE_PAIRS)
+    + "|"
+    + "|".join(
+        f"{opener}`{closer}"
+        for opener, closer in zip(map(re.escape, openers), map(re.escape, closers))
+    )
+    + ")"
+)
 
-role_body = rf"([^`]|\s`+|\\`|:{simplename}:`([^`]|\s`+|\\`)+`)+"
-normal_role = f":{simplename}:`{role_body}`"
-backtick_in_front_of_role = re.compile(rf"(^|\s)`:{simplename}:`{role_body}`")
 
-
-# https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#inline-markup-recognition-rules
-default_role_re = re.compile(
-    r"""
+def inline_markup_gen(start_string, end_string):
+    return re.compile(
+        r"""
     (?<!\x00) # Both inline markup start-string and end-string must not be preceded by an unescaped backslash
     (?<=      # Inline markup start-strings must:
         ^|           # start a text block
@@ -329,12 +350,18 @@ default_role_re = re.compile(
         [-:/'"<([{]| # one of the ASCII characters
         [\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
     )
-    (?P<default_role>`        # Default role start
-        [^`\s]    # Inline markup start-strings must be immediately followed by non-whitespace.
-                  # The inline markup end-string must be separated by at least one character from the start-string.
-        """ + QUOTE_PAIRS_NEGATIVE_LOOKBEHIND + r"""
-        [^`]*
-    `)        # Default role end
+    (?P<inline_markup>"""
+        + start_string
+        + r"""        # Inline markup start
+        \S     # Inline markup start-strings must be immediately followed by non-whitespace.
+               # The inline markup end-string must be separated by at least one character from the start-string.
+        """
+        + QUOTE_PAIRS_NEGATIVE_LOOKBEHIND
+        + r"""
+        .*?
+    """
+        + end_string
+        + r""")        # Inline markup end
     (?=       # Inline markup end-strings must
         $|    # end a text block or
         \s|   # be immediately followed by whitespace,
@@ -342,8 +369,20 @@ default_role_re = re.compile(
         [-.,:;!?/'")\]}>]|  # one of the ASCII characters
         [\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
     )
-""",
-   flags=re.VERBOSE)
+    """,
+        flags=re.VERBOSE | re.DOTALL,
+    )
+
+
+# https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#inline-markup-recognition-rules
+interpreted_text_re = inline_markup_gen("`", "`")
+inline_literal_re = inline_markup_gen("``", "``")
+normal_role_re = re.compile(
+    f":{simplename}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
+)
+backtick_in_front_of_role = re.compile(
+    rf"(^|\s)`:{simplename}:{interpreted_text_re.pattern}"
+)
 
 
 @checker(".rst", enabled=False)
@@ -355,10 +394,10 @@ def check_default_role(file, lines, options=None):
     """
     for lno, line in enumerate(lines, start=1):
         line = escape2null(line)
-        match = default_role_re.search(line)
+        match = interpreted_text_re.search(line)
         if match:
-            before_match = line[:match.start()]
-            after_match = line[match.end():]
+            before_match = line[: match.start()]
+            after_match = line[match.end() :]
             if re.search(role_tag + "$", before_match):
                 # It's not a default role: it starts with a tag.
                 continue
@@ -403,9 +442,12 @@ def check_missing_space_after_role(file, lines, options=None):
     #    The :literal:`:exc:`Exceptions``
     # While this is not:
     #    The :literal:`:exc:`Exceptions``s
+    role_body = rf"([^`]|\s`+|\\`|:{simplename}:`([^`]|\s`+|\\`)+`)+"
+    suspicious_role = re.compile(f":{simplename}:`{role_body}`s")
     for lno, line in enumerate(lines, start=1):
-        line = re.sub("``.*?``", "", line).replace("````", "")
-        role = re.search(rf"{normal_role}s", line)
+        line = inline_literal_re.sub("", line)
+        line = normal_role_re.sub("", line)
+        role = suspicious_role.search(line)
         if role:
             yield lno, f"role missing (escaped) space after role: {role.group(0)!r}"
 

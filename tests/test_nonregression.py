@@ -39,16 +39,6 @@ def test_last_line_has_no_newline(check_str):
     assert error_count
 
 
-def test_inline_literal_inside_role(check_str):
-    error_count, out = check_str(
-        r""":emphasis:`This ``Too Shall\`\` Pass`
-even ``followed`` by ``inline literals``.
-""",
-    )
-    assert not out
-    assert not error_count
-
-
 def test_roles_may_not_be_hardcoded(check_str):
     error_count, out = check_str("such as :std:doc:`PyPA build <pypa-build:index>`\n")
     assert not out
