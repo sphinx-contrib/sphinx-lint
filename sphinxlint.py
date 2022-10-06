@@ -8,10 +8,9 @@
 # TODO: - wrong versions in versionadded/changed
 #       - wrong markup after versionchanged directive
 
-"""Sphinx rst linter.
-"""
+"""Sphinx rst linter."""
 
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 import argparse
 import multiprocessing
@@ -26,8 +25,8 @@ import regex as re
 
 
 # The following chars groups are from docutils:
-closing_delimiters = "\\\\.,;!?"
-delimiters = (
+CLOSING_DELIMITERS = "\\\\.,;!?"
+DELIMITERS = (
     "\\-/:\u058a\xa1\xb7\xbf\u037e\u0387\u055a-\u055f\u0589"
     "\u05be\u05c0\u05c3\u05c6\u05f3\u05f4\u0609\u060a\u060c"
     "\u060d\u061b\u061e\u061f\u066a-\u066d\u06d4\u0700-\u070d"
@@ -50,7 +49,7 @@ delimiters = (
     "\uff1b\uff1f\uff20\uff3c\uff61\uff64\uff65"
 )
 
-closers = (
+CLOSERS = (
     "\"')>\\]}\u0f3b\u0f3d\u169c\u2046\u207e\u208e\u232a\u2769"
     "\u276b\u276d\u276f\u2771\u2773\u2775\u27c6\u27e7\u27e9\u27eb"
     "\u27ed\u27ef\u2984\u2986\u2988\u298a\u298c\u298e\u2990\u2992"
@@ -63,7 +62,7 @@ closers = (
     "\u2e1c\u2e20\u201a\u201e"
 )
 
-openers = (
+OPENERS = (
     "\"'(<\\[{\u0f3a\u0f3c\u169b\u2045\u207d\u208d\u2329\u2768"
     "\u276a\u276c\u276e\u2770\u2772\u2774\u27c5\u27e6\u27e8\u27ea"
     "\u27ec\u27ee\u2983\u2985\u2987\u2989\u298b\u298d\u298f\u2991"
@@ -77,7 +76,7 @@ openers = (
 )
 
 # fmt: off
-directives = [
+DIRECTIVES = [
     # standard docutils ones
     'admonition', 'attention', 'caution', 'class', 'compound', 'container',
     'contents', 'csv-table', 'danger', 'date', 'default-role', 'epigraph',
@@ -104,11 +103,11 @@ directives = [
 # fmt: on
 
 
-all_directives = "(" + "|".join(directives) + ")"
-before_role = r"(^|(?<=[\s(/'{\[*-]))"
-simplename = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
-role_tag = rf":{simplename}:"
-role_head = rf"({before_role}:{simplename}:)"  # A role, with a clean start
+ALL_DIRECTIVES = "(" + "|".join(DIRECTIVES) + ")"
+BEFORE_ROLE = r"(^|(?<=[\s(/'{\[*-]))"
+SIMPLENAME = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
+ROLE_TAG = rf":{SIMPLENAME}:"
+ROLE_HEAD = rf"({BEFORE_ROLE}:{SIMPLENAME}:)"  # A role, with a clean start
 
 # Find comments that look like a directive, like:
 # .. versionchanged 3.6
@@ -116,22 +115,22 @@ role_head = rf"({before_role}:{simplename}:)"  # A role, with a clean start
 # .. versionchanged: 3.6
 # as it should be:
 # .. versionchanged:: 3.6
-seems_directive_re = re.compile(rf"^\s*(?<!\.)\.\. {all_directives}([^a-z:]|:(?!:))")
+seems_directive_re = re.compile(rf"^\s*(?<!\.)\.\. {ALL_DIRECTIVES}([^a-z:]|:(?!:))")
 
 # Find directive prefixed with three dots instead of two, like:
 # ... versionchanged:: 3.6
 # instead of:
 # .. versionchanged:: 3.6
-three_dot_directive_re = re.compile(rf"\.\.\. {all_directives}::")
+three_dot_directive_re = re.compile(rf"\.\.\. {ALL_DIRECTIVES}::")
 
 # Find role used with double backticks instead of simple backticks like:
 # :const:``None``
 # instead of:
 # :const:`None`
-double_backtick_role = re.compile(rf"(?<!``){role_head}``")
+double_backtick_role = re.compile(rf"(?<!``){ROLE_HEAD}``")
 
-start_string_prefix = f"(^|(?<=\\s|[{openers}{delimiters}|]))"
-end_string_suffix = f"($|(?=\\s|[\x00{closing_delimiters}{delimiters}{closers}|]))"
+start_string_prefix = f"(^|(?<=\\s|[{OPENERS}{DELIMITERS}|]))"
+end_string_suffix = f"($|(?=\\s|[\x00{CLOSING_DELIMITERS}{DELIMITERS}{CLOSERS}|]))"
 
 # Find role glued with another word like:
 #     the:c:func:`PyThreadState_LeaveTracing` function.
@@ -142,14 +141,14 @@ end_string_suffix = f"($|(?=\\s|[\x00{closing_delimiters}{delimiters}{closers}|]
 #     issue:`123`
 # instead of:
 #     :issue:`123`
-role_glued_with_word = re.compile(rf"(^|\s)(?!:){simplename}:`(?!`)")
+role_glued_with_word = re.compile(rf"(^|\s)(?!:){SIMPLENAME}:`(?!`)")
 
 
-role_with_no_backticks = re.compile(rf"(^|\s):{simplename}:(?![`:])[^\s`]+(\s|$)")
+role_with_no_backticks = re.compile(rf"(^|\s):{SIMPLENAME}:(?![`:])[^\s`]+(\s|$)")
 
 # Find role missing middle colon, like:
 #    The :issue`123` is ...
-role_missing_right_colon = re.compile(rf"(^|\s):{simplename}`(?!`)")
+role_missing_right_colon = re.compile(rf"(^|\s):{SIMPLENAME}`(?!`)")
 
 seems_hyperlink_re = re.compile(r"`[^`]+?(\s?)<https?://[^`]+>`(_?)")
 
@@ -190,11 +189,7 @@ def check_python_syntax(file, lines, options=None):
         yield err.lineno, f"not compilable: {err}"
 
 
-def is_in_a_table(error, line):
-    return "|" in line[: error.start()] and "|" in line[error.end() :]
-
-
-role_missing_closing_backtick = re.compile(rf"({role_head}`[^`]+?)[^`]*$")
+role_missing_closing_backtick = re.compile(rf"({ROLE_HEAD}`[^`]+?)[^`]*$")
 
 
 @checker(".rst")
@@ -334,13 +329,18 @@ QUOTE_PAIRS_NEGATIVE_LOOKBEHIND = (
     + "|"
     + "|".join(
         f"{opener}`{closer}"
-        for opener, closer in zip(map(re.escape, openers), map(re.escape, closers))
+        for opener, closer in zip(map(re.escape, OPENERS), map(re.escape, CLOSERS))
     )
     + ")"
 )
 
 
 def inline_markup_gen(start_string, end_string):
+    """Generate a regex matching an inline markup.
+
+    inline_markup_gen('**', '**') geneates a regex matching strong
+    emphasis inline markup.
+    """
     return re.compile(
         r"""
     (?<!\x00) # Both inline markup start-string and end-string must not be preceded by an unescaped backslash
@@ -378,10 +378,10 @@ def inline_markup_gen(start_string, end_string):
 interpreted_text_re = inline_markup_gen("`", "`")
 inline_literal_re = inline_markup_gen("``", "``")
 normal_role_re = re.compile(
-    f":{simplename}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
+    f":{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
 )
 backtick_in_front_of_role = re.compile(
-    rf"(^|\s)`:{simplename}:{interpreted_text_re.pattern}"
+    rf"(^|\s)`:{SIMPLENAME}:{interpreted_text_re.pattern}"
 )
 
 
@@ -398,10 +398,10 @@ def check_default_role(file, lines, options=None):
         if match:
             before_match = line[: match.start()]
             after_match = line[match.end() :]
-            if re.search(role_tag + "$", before_match):
+            if re.search(ROLE_TAG + "$", before_match):
                 # It's not a default role: it starts with a tag.
                 continue
-            if re.search("^" + role_tag, after_match):
+            if re.search("^" + ROLE_TAG, after_match):
                 # It's not a default role: it ends with a tag.
                 continue
             yield lno, "default role used (hint: for inline literals, use double backticks)"
@@ -442,8 +442,8 @@ def check_missing_space_after_role(file, lines, options=None):
     #    The :literal:`:exc:`Exceptions``
     # While this is not:
     #    The :literal:`:exc:`Exceptions``s
-    role_body = rf"([^`]|\s`+|\\`|:{simplename}:`([^`]|\s`+|\\`)+`)+"
-    suspicious_role = re.compile(f":{simplename}:`{role_body}`s")
+    role_body = rf"([^`]|\s`+|\\`|:{SIMPLENAME}:`([^`]|\s`+|\\`)+`)+"
+    suspicious_role = re.compile(f":{SIMPLENAME}:`{role_body}`s")
     for lno, line in enumerate(lines, start=1):
         line = inline_literal_re.sub("", line)
         line = normal_role_re.sub("", line)
@@ -612,6 +612,7 @@ def check_leaked_markup(file, lines, options=None):
 
 
 def is_multiline_non_rst_block(line):
+    """Returns True if the next lines are an indented literal block."""
     if line.endswith("..\n"):
         return True
     if line.endswith("::\n"):
@@ -657,7 +658,8 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
 
 
 def type_of_explicit_markup(line):
-    if re.match(rf"\.\. {all_directives}::", line):
+    """Tell apart various explicit markup blocks."""
+    if re.match(rf"\.\. {ALL_DIRECTIVES}::", line):
         return "directive"
     if re.match(r"\.\. \[[0-9]+\] ", line):
         return "footnote"
@@ -717,6 +719,7 @@ def check_bad_dedent(file, lines, options=None):
 
 
 def parse_args(argv=None):
+    """Parse command line argument."""
     if argv is None:
         argv = sys.argv
     parser = argparse.ArgumentParser(description=__doc__)

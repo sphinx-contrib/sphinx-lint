@@ -38,3 +38,8 @@ sphinx-lint = "sphinxlint:main"
 py-modules = ["sphinxlint"]
 include-package-data = false
 # dynamic.version.attr = "sphinxlint.__version__"
+
+[tool.black]
+
+[tool.pylint.variables]
+callbacks = ["check_"]
