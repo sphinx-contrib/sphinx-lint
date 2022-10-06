@@ -34,4 +34,4 @@ jobs:
       - name: Download more tests from friend projects
         run: |
           sh download-more-tests.sh
-          sphinx-lint
+          sphinx-lint tests/fixtures/friends/
