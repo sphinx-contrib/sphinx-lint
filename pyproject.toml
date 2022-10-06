@@ -23,9 +23,7 @@ requires-python = ">= 3.7"
 dependencies = [
     "regex",
 ]
-version = "0.6.1"
-# Can't use dynamic due to https://github.com/pypa/setuptools/issues/3612
-# dynamic = ["version"]
+dynamic = ["version"]
 
 
 [project.urls]
@@ -37,7 +35,7 @@ sphinx-lint = "sphinxlint:main"
 [tool.setuptools]
 py-modules = ["sphinxlint"]
 include-package-data = false
-# dynamic.version.attr = "sphinxlint.__version__"
+dynamic.version.attr = "sphinxlint.__version__"
 
 [tool.black]
 
