@@ -208,6 +208,21 @@ def check_missing_backtick_after_role(file, lines, options=None):
             yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
 
 
+def match_size(re_match):
+    return re_match.end() - re_match.start()
+
+
+def clean_paragraph(paragraph):
+    paragraph = escape2null(paragraph)
+    while True:
+        potential_inline_literal = min(inline_literal_re.finditer(paragraph, overlapped=True),key=match_size, default=None)
+        if potential_inline_literal is None:
+            break
+        paragraph = paragraph[:potential_inline_literal.start()] + paragraph[potential_inline_literal.end():]
+    paragraph = normal_role_re.sub("", paragraph)
+    return paragraph.replace("\x00", "\\")
+
+
 @checker(".rst")
 def check_missing_space_after_literal(file, lines, options=None):
     r"""Search for inline literals immediately followed by a character.
@@ -218,9 +233,7 @@ def check_missing_space_after_literal(file, lines, options=None):
     for paragraph_lno, paragraph in paragraphs(lines):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
-        paragraph = escape2null(paragraph)
-        paragraph = inline_literal_re.sub("", paragraph)
-        paragraph = normal_role_re.sub("", paragraph)
+        paragraph = clean_paragraph(paragraph)
         for role in re.finditer("``.+?``(?!`).", paragraph, flags=re.DOTALL):
             if not re.match(end_string_suffix, role.group(0)[-1]):
                 error_offset = paragraph[: role.start()].count("\n")
@@ -241,9 +254,7 @@ def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
     for paragraph_lno, paragraph in paragraphs(lines):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
-        paragraph = escape2null(paragraph)
-        paragraph = inline_literal_re.sub("", paragraph)
-        paragraph = normal_role_re.sub("", paragraph)
+        paragraph = clean_paragraph(paragraph)
         for lone_double_backtick in re.finditer("(?<!`)``(?!`)", paragraph):
             error_offset = paragraph[: lone_double_backtick.start()].count("\n")
             yield (
@@ -357,9 +368,7 @@ def inline_markup_gen(start_string, end_string):
                # The inline markup end-string must be separated by at least one character from the start-string.
         """
         + QUOTE_PAIRS_NEGATIVE_LOOKBEHIND
-        + r"""
-        .*?
-    """
+        + ".*?"
         + end_string
         + r""")        # Inline markup end
     (?=       # Inline markup end-strings must
@@ -446,8 +455,7 @@ def check_missing_space_after_role(file, lines, options=None):
     role_body = rf"([^`]|\s`+|\\`|:{SIMPLENAME}:`([^`]|\s`+|\\`)+`)+"
     suspicious_role = re.compile(f":{SIMPLENAME}:`{role_body}`s")
     for lno, line in enumerate(lines, start=1):
-        line = inline_literal_re.sub("", line)
-        line = normal_role_re.sub("", line)
+        line = clean_paragraph(line)
         role = suspicious_role.search(line)
         if role:
             yield lno, f"role missing (escaped) space after role: {role.group(0)!r}"
