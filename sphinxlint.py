@@ -215,10 +215,17 @@ def match_size(re_match):
 def clean_paragraph(paragraph):
     paragraph = escape2null(paragraph)
     while True:
-        potential_inline_literal = min(inline_literal_re.finditer(paragraph, overlapped=True),key=match_size, default=None)
+        potential_inline_literal = min(
+            inline_literal_re.finditer(paragraph, overlapped=True),
+            key=match_size,
+            default=None,
+        )
         if potential_inline_literal is None:
             break
-        paragraph = paragraph[:potential_inline_literal.start()] + paragraph[potential_inline_literal.end():]
+        paragraph = (
+            paragraph[: potential_inline_literal.start()]
+            + paragraph[potential_inline_literal.end() :]
+        )
     paragraph = normal_role_re.sub("", paragraph)
     return paragraph.replace("\x00", "\\")
 
@@ -352,31 +359,40 @@ def inline_markup_gen(start_string, end_string):
     inline_markup_gen('**', '**') geneates a regex matching strong
     emphasis inline markup.
     """
+    ascii_allowed_before = r"""[-:/'"<(\[{]"""
+    unicode_allowed_before = r"[\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
+    ascii_allowed_after = r"""[-.,:;!?/'")\]}>]"""
+    unicode_allowed_after = r"[\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
     return re.compile(
-        r"""
-    (?<!\x00) # Both inline markup start-string and end-string must not be preceded by an unescaped backslash
-    (?<=      # Inline markup start-strings must:
+        fr"""
+    (?<!\x00) # Both inline markup start-string and end-string must not be preceded by
+              # an unescaped backslash
+
+    (?<=             # Inline markup start-strings must:
         ^|           # start a text block
         \s|          # or be immediately preceded by whitespace,
-        [-:/'"<([{]| # one of the ASCII characters
-        [\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
+        {ascii_allowed_before}|  # one of the ASCII characters
+        {unicode_allowed_before} # or a similar non-ASCII punctuation character.
     )
-    (?P<inline_markup>"""
-        + start_string
-        + r"""        # Inline markup start
-        \S     # Inline markup start-strings must be immediately followed by non-whitespace.
-               # The inline markup end-string must be separated by at least one character from the start-string.
-        """
-        + QUOTE_PAIRS_NEGATIVE_LOOKBEHIND
-        + ".*?"
-        + end_string
-        + r""")        # Inline markup end
+
+    (?P<inline_markup>
+        {start_string} # Inline markup start
+        \S             # Inline markup start-strings must be immediately followed by
+                       # non-whitespace.
+                       # The inline markup end-string must be separated by at least one
+                       # character from the start-string.
+        {QUOTE_PAIRS_NEGATIVE_LOOKBEHIND}
+        .*?
+        (?<=\S)       # Inline markup end-strings must be immediately preceded by non-whitespace.
+        {end_string}  # Inline markup end
+    )
+
     (?=       # Inline markup end-strings must
         $|    # end a text block or
         \s|   # be immediately followed by whitespace,
         \x00|
-        [-.,:;!?/'")\]}>]|  # one of the ASCII characters
-        [\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]  # or a similar non-ASCII punctuation character.
+        {ascii_allowed_after}|  # one of the ASCII characters
+        {unicode_allowed_after} # or a similar non-ASCII punctuation character.
     )
     """,
         flags=re.VERBOSE | re.DOTALL,
@@ -390,8 +406,7 @@ normal_role_re = re.compile(
     f":{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
 )
 backtick_in_front_of_role = re.compile(
-    rf"(^|\s)`:{SIMPLENAME}:{interpreted_text_re.pattern}",
-    flags=re.VERBOSE|re.DOTALL
+    rf"(^|\s)`:{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
 )
 
 
@@ -525,12 +540,37 @@ def check_role_with_double_backticks(file, lines, options=None):
 
     Bad:  :fct:``sum``
     Good: :fct:`sum`
+
+    The hard thing is that :fct:``sum`` is a legitimate
+    restructuredtext construction:
+
+    :fct: is just plain text.
+    ``sum`` is an inline literal.
+
+    So to properly detect this one we're searching for actual inline
+    literals that have a role tag.
     """
-    for lno, line in enumerate(lines, start=1):
-        if "`" not in line:
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
             continue
-        if double_backtick_role.search(line):
-            yield lno, "role use a single backtick, double backtick found."
+        if paragraph.count("|") > 4:
+            return  # we don't handle tables yet.
+        paragraph = escape2null(paragraph)
+        while True:
+            inline_literal = min(
+                inline_literal_re.finditer(paragraph, overlapped=True),
+                key=match_size,
+                default=None,
+            )
+            if inline_literal is None:
+                break
+            before = paragraph[: inline_literal.start()]
+            if re.search(ROLE_TAG + "$", before):
+                error_offset = paragraph[: inline_literal.start()].count("\n")
+                yield paragraph_lno + error_offset, "role use a single backtick, double backtick found."
+            paragraph = (
+                paragraph[: inline_literal.start()] + paragraph[inline_literal.end() :]
+            )
 
 
 @checker(".rst")
@@ -661,7 +701,10 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
             in_literal = len(re.match(" *", line).group(0))
             block_line_start = lineno
             assert not excluded_lines
-            if re.match(r" *\.\. ", line) and type_of_explicit_markup(line) == "comment":
+            if (
+                re.match(r" *\.\. ", line)
+                and type_of_explicit_markup(line) == "comment"
+            ):
                 line = "\n"
         output.append(line)
     if excluded_lines and hidden_block_cb:
