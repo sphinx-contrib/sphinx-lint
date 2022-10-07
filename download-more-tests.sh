@@ -23,6 +23,7 @@
 # https://github.com/jazzband/django-oauth-toolkit docs
 # https://github.com/neo4j/neo4j-python-driver docs
 # https://github.com/pandas-dev/pandas doc
+# https://github.com/python/peps . --disable=trailing-whitespace
 # https://github.com/python/cpython Doc --enable default-role
 # https://github.com/python/devguide/ . --enable default-role
 # https://github.com/spyder-ide/spyder-docs doc --enable all --disable line-too-long
@@ -54,3 +55,4 @@ grep '^# https://' "$0" |
 # Remove exceptions:
 
 rm -f tests/fixtures/friends/cpython/Doc/README.rst
+rm -fr tests/fixtures/friends/peps/pep_sphinx_extensions
