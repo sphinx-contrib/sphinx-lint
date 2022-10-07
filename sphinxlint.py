@@ -212,20 +212,33 @@ def match_size(re_match):
     return re_match.end() - re_match.start()
 
 
-def clean_paragraph(paragraph):
-    paragraph = escape2null(paragraph)
+def _clean_heuristic(paragraph, regex):
+    """Remove the regex from the paragraph.
+
+    The remove starts by most "credible" ones (here lies the dragons).
+
+    To remove `(.*)` from `(abc def ghi (jkl)`, a bad move consists of
+    removing everything (eating a lone `(`), while the most credible
+    action to take is to remove `(jkl)`, leaving a lone `(`.
+    """
     while True:
-        potential_inline_literal = min(
-            inline_literal_re.finditer(paragraph, overlapped=True),
-            key=match_size,
-            default=None,
+        candidate = min(
+            regex.finditer(paragraph, overlapped=True), key=match_size, default=None
         )
-        if potential_inline_literal is None:
-            break
-        paragraph = (
-            paragraph[: potential_inline_literal.start()]
-            + paragraph[potential_inline_literal.end() :]
-        )
+        if candidate is None:
+            return paragraph
+        paragraph = paragraph[: candidate.start()] + paragraph[candidate.end() :]
+
+
+def clean_paragraph(paragraph):
+    """Removes all good constructs, so detectors can focus on bad ones.
+
+    It removes all well formed inline literals, inline internal
+    targets, and roles.
+    """
+    paragraph = escape2null(paragraph)
+    paragraph = _clean_heuristic(paragraph, inline_literal_re)
+    paragraph = _clean_heuristic(paragraph, inline_internal_target_re)
     paragraph = normal_role_re.sub("", paragraph)
     return paragraph.replace("\x00", "\\")
 
@@ -353,7 +366,7 @@ QUOTE_PAIRS_NEGATIVE_LOOKBEHIND = (
 )
 
 
-def inline_markup_gen(start_string, end_string):
+def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
     """Generate a regex matching an inline markup.
 
     inline_markup_gen('**', '**') geneates a regex matching strong
@@ -363,8 +376,10 @@ def inline_markup_gen(start_string, end_string):
     unicode_allowed_before = r"[\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
     ascii_allowed_after = r"""[-.,:;!?/'")\]}>]"""
     unicode_allowed_after = r"[\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
+    if extra_allowed_before:
+        extra_allowed_before = "|" + extra_allowed_before
     return re.compile(
-        fr"""
+        rf"""
     (?<!\x00) # Both inline markup start-string and end-string must not be preceded by
               # an unescaped backslash
 
@@ -373,6 +388,7 @@ def inline_markup_gen(start_string, end_string):
         \s|          # or be immediately preceded by whitespace,
         {ascii_allowed_before}|  # one of the ASCII characters
         {unicode_allowed_before} # or a similar non-ASCII punctuation character.
+        {extra_allowed_before}
     )
 
     (?P<inline_markup>
@@ -401,6 +417,7 @@ def inline_markup_gen(start_string, end_string):
 
 # https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#inline-markup-recognition-rules
 interpreted_text_re = inline_markup_gen("`", "`")
+inline_internal_target_re = inline_markup_gen("_`", "`")
 inline_literal_re = inline_markup_gen("``", "``")
 normal_role_re = re.compile(
     f":{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
@@ -585,6 +602,29 @@ def check_missing_space_before_role(file, lines, options=None):
             continue
         if role_glued_with_word.search(line):
             yield lno, "missing space before role"
+
+
+@checker(".rst")
+def check_missing_space_before_default_role(file, lines, options=None):
+    """Search for missing spaces before default role.
+
+    Bad:  the`sum`
+    Good: the `sum`
+    """
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if paragraph.count("|") > 4:
+            return  # we don't handle tables yet.
+        paragraph = clean_paragraph(paragraph)
+        paragraph = interpreted_text_re.sub("", paragraph)
+        for role in inline_markup_gen("`", "`", extra_allowed_before="[^_]").finditer(
+            paragraph
+        ):
+            error_offset = paragraph[: role.start()].count("\n")
+            context = paragraph[role.start() - 3 : role.end()]
+            yield (
+                paragraph_lno + error_offset,
+                f"missing space before default role: {context!r}.",
+            )
 
 
 @checker(".rst")
