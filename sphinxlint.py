@@ -10,7 +10,7 @@
 
 """Sphinx rst linter."""
 
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 import argparse
 import multiprocessing
@@ -239,6 +239,8 @@ def clean_paragraph(paragraph):
     paragraph = escape2null(paragraph)
     paragraph = _clean_heuristic(paragraph, inline_literal_re)
     paragraph = _clean_heuristic(paragraph, inline_internal_target_re)
+    paragraph = _clean_heuristic(paragraph, hyperlink_references_re)
+    paragraph = _clean_heuristic(paragraph, anonymous_hyperlink_references_re)
     paragraph = normal_role_re.sub("", paragraph)
     return paragraph.replace("\x00", "\\")
 
@@ -418,6 +420,8 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
 # https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html#inline-markup-recognition-rules
 interpreted_text_re = inline_markup_gen("`", "`")
 inline_internal_target_re = inline_markup_gen("_`", "`")
+hyperlink_references_re = inline_markup_gen("`", "`_")
+anonymous_hyperlink_references_re = inline_markup_gen("`", "`__")
 inline_literal_re = inline_markup_gen("``", "``")
 normal_role_re = re.compile(
     f":{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
@@ -624,6 +628,27 @@ def check_missing_space_before_default_role(file, lines, options=None):
             yield (
                 paragraph_lno + error_offset,
                 f"missing space before default role: {context!r}.",
+            )
+
+
+@checker(".rst")
+def check_hyperlink_reference_missing_backtick(file, lines, options=None):
+    """Search for missing backticks in front of hyperlink references.
+
+    Bad:  Misc/NEWS <https://github.com/python/cpython/blob/v3.2.6/Misc/NEWS>`_
+    Good: `Misc/NEWS <https://github.com/python/cpython/blob/v3.2.6/Misc/NEWS>`_
+    """
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if paragraph.count("|") > 4:
+            return  # we don't handle tables yet.
+        paragraph = clean_paragraph(paragraph)
+        paragraph = interpreted_text_re.sub("", paragraph)
+        for hyperlink_reference in re.finditer(r"\S* <https?://[^ ]+>`_", paragraph):
+            error_offset = paragraph[: hyperlink_reference.start()].count("\n")
+            context = hyperlink_reference.group(0)
+            yield (
+                paragraph_lno + error_offset,
+                f"missing backtick before hyperlink reference: {context!r}.",
             )
 
 
