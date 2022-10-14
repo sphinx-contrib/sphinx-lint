@@ -1,3 +1,5 @@
+.. expect: Bad dedent in block (bad-dedent)
+
 Here's a single big code block, but the author intent was to write two::
 
     >>> from enum import Enum

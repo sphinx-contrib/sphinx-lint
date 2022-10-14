@@ -1,3 +1,5 @@
+.. expect: missing space before default role: "ing`'RESTART'`". (missing-space-before-default-role)
+
 Lines containing`'RESTART'` mean that the user execution process has been
 re-started.  This occurs when the user execution process has crashed,
 when one requests a restart on the Shell menu, or when one runs code
