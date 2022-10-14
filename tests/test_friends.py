@@ -22,8 +22,8 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 )
 def test_sphinxlint_friend_projects_shall_pass(file, capsys):
     flags = (Path(file) / "flags").read_text(encoding="UTF-8")
-    error_count = main(["sphinxlint.py", file] + shlex.split(flags))
+    has_errors = main(["sphinxlint.py", file] + shlex.split(flags))
     out, err = capsys.readouterr()
     assert err == ""
     assert out == "No problems found.\n"
-    assert error_count == 0
+    assert not has_errors
