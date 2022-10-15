@@ -141,14 +141,15 @@ end_string_suffix = f"($|(?=\\s|[\x00{CLOSING_DELIMITERS}{DELIMITERS}{CLOSERS}|]
 #     issue:`123`
 # instead of:
 #     :issue:`123`
-role_glued_with_word = re.compile(rf"(^|\s)(?!:){SIMPLENAME}:`(?!`)")
 
+role_glued_with_word = re.compile(rf"(^|\s)(?<!:){SIMPLENAME}:`(?!`)")
 
 role_with_no_backticks = re.compile(rf"(^|\s):{SIMPLENAME}:(?![`:])[^\s`]+(\s|$)")
 
 # Find role missing middle colon, like:
 #    The :issue`123` is ...
 role_missing_right_colon = re.compile(rf"(^|\s):{SIMPLENAME}`(?!`)")
+
 
 seems_hyperlink_re = re.compile(r"`[^`]+?(\s?)<https?://[^`]+>`(_?)")
 
@@ -367,6 +368,11 @@ QUOTE_PAIRS_NEGATIVE_LOOKBEHIND = (
     + ")"
 )
 
+ascii_allowed_before_inline_markup = r"""[-:/'"<(\[{]"""
+unicode_allowed_before_inline_markup = r"[\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
+ascii_allowed_after_inline_markup = r"""[-.,:;!?/'")\]}>]"""
+unicode_allowed_after_inline_markup = r"[\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
+
 
 def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
     """Generate a regex matching an inline markup.
@@ -374,10 +380,6 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
     inline_markup_gen('**', '**') geneates a regex matching strong
     emphasis inline markup.
     """
-    ascii_allowed_before = r"""[-:/'"<(\[{]"""
-    unicode_allowed_before = r"[\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
-    ascii_allowed_after = r"""[-.,:;!?/'")\]}>]"""
-    unicode_allowed_after = r"[\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
     if extra_allowed_before:
         extra_allowed_before = "|" + extra_allowed_before
     return re.compile(
@@ -388,8 +390,8 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
     (?<=             # Inline markup start-strings must:
         ^|           # start a text block
         \s|          # or be immediately preceded by whitespace,
-        {ascii_allowed_before}|  # one of the ASCII characters
-        {unicode_allowed_before} # or a similar non-ASCII punctuation character.
+        {ascii_allowed_before_inline_markup}|  # one of the ASCII characters
+        {unicode_allowed_before_inline_markup} # or a similar non-ASCII punctuation character.
         {extra_allowed_before}
     )
 
@@ -409,8 +411,8 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
         $|    # end a text block or
         \s|   # be immediately followed by whitespace,
         \x00|
-        {ascii_allowed_after}|  # one of the ASCII characters
-        {unicode_allowed_after} # or a similar non-ASCII punctuation character.
+        {ascii_allowed_after_inline_markup}|  # one of the ASCII characters
+        {unicode_allowed_after_inline_markup} # or a similar non-ASCII punctuation character.
     )
     """,
         flags=re.VERBOSE | re.DOTALL,
@@ -424,7 +426,19 @@ hyperlink_references_re = inline_markup_gen("`", "`_")
 anonymous_hyperlink_references_re = inline_markup_gen("`", "`__")
 inline_literal_re = inline_markup_gen("``", "``")
 normal_role_re = re.compile(
-    f":{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
+    rf"""
+    (?<!\x00) # Both inline markup start-string and end-string must not be preceded by
+              # an unescaped backslash
+
+    (?<=             # Inline markup start-strings must:
+        ^|           # start a text block
+        \s|          # or be immediately preceded by whitespace,
+        {ascii_allowed_before_inline_markup}|  # one of the ASCII characters
+        {unicode_allowed_before_inline_markup} # or a similar non-ASCII punctuation character.
+    )
+
+    :{SIMPLENAME}:{interpreted_text_re.pattern}""",
+    flags=re.VERBOSE | re.DOTALL,
 )
 backtick_in_front_of_role = re.compile(
     rf"(^|\s)`:{SIMPLENAME}:{interpreted_text_re.pattern}", flags=re.VERBOSE | re.DOTALL
@@ -450,6 +464,9 @@ def check_default_role(file, lines, options=None):
                 continue
             if re.search("^" + ROLE_TAG, after_match):
                 # It's not a default role: it ends with a tag.
+                continue
+            if match.group(0).startswith("``") and match.group(0).endswith("``"):
+                # It's not a default role: it's an inline literal.
                 continue
             yield lno, "default role used (hint: for inline literals, use double backticks)"
 
@@ -594,18 +611,51 @@ def check_role_with_double_backticks(file, lines, options=None):
             )
 
 
+def looks_like_glued(match):
+    """Tell appart glued tags and tags with a missing colon.
+
+    In one case we can have:
+
+        the:issue:`123`, it's clearly a missing space before the role tag.
+
+    should return True in this case.
+
+    In another case we can have:
+
+        c:func:`foo`, it's a missing colon before the tag.
+
+    should return False in this case.
+    """
+    match_string = match.group(0)
+    if match_string.count(":") == 1:
+        # With a single : there's no choice, another : is missing.
+        return False
+    known_start_tag = {"c", "py"}
+    if re.match(" *(" + "|".join(known_start_tag) + "):", match_string):
+        # Before c:anything:` or py:anything:` we can bet it's a missing colon.
+        return False
+    # In other cases it's probably a glued word.
+    return True
+
+
 @checker(".rst")
 def check_missing_space_before_role(file, lines, options=None):
     """Search for missing spaces before roles.
 
-    Bad:  the:fct:`sum`
-    Good: the :fct:`sum`
+    Bad:  the:fct:`sum`, issue:`123`, c:func:`foo`
+    Good: the :fct:`sum`, :issue:`123`, :c:func:`foo`
     """
-    for lno, line in enumerate(lines, start=1):
-        if "`" not in line:
-            continue
-        if role_glued_with_word.search(line):
-            yield lno, "missing space before role"
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if paragraph.count("|") > 4:
+            return  # we don't handle tables yet.
+        paragraph = clean_paragraph(paragraph)
+        match = role_glued_with_word.search(paragraph)
+        if match:
+            error_offset = paragraph[: match.start()].count("\n")
+            if looks_like_glued(match):
+                yield paragraph_lno + error_offset, f"missing space before role ({match.group(0)})."
+            else:
+                yield paragraph_lno + error_offset, f"role missing opening tag colon ({match.group(0)})."
 
 
 @checker(".rst")
@@ -660,8 +710,9 @@ def check_missing_colon_in_role(file, lines, options=None):
     Good: :issue:`123`
     """
     for lno, line in enumerate(lines, start=1):
-        if role_missing_right_colon.search(line):
-            yield lno, "role missing colon before first backtick."
+        match = role_missing_right_colon.search(line)
+        if match:
+            yield lno, f"role missing colon before first backtick ({match.group(0)})."
 
 
 @checker(".py", ".rst", rst_only=False)
