@@ -1,4 +1,4 @@
-.. expect: missing space before role
+.. expect: role missing opening tag colon
 
 .. and yes, it looks like a default role, so:
 .. expect: default role used
