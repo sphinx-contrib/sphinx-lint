@@ -56,3 +56,4 @@ grep '^# https://' "$0" |
 
 rm -f tests/fixtures/friends/cpython/Doc/README.rst
 rm -fr tests/fixtures/friends/peps/pep_sphinx_extensions
+find tests/fixtures/friends/ '(' -name 'test_*.py' -o -name '*_test.py' ')' -delete
