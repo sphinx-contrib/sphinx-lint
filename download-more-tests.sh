@@ -30,6 +30,9 @@
 # https://github.com/sympy/sympy doc
 # https://github.com/sphinx-doc/sphinx doc --enable line-too-long --max-line-length 85
 
+# This one could be enabled soon:
+## https://github.com/python/python-docs-fr . --enable all --disable line-too-long
+
 grep '^# https://' "$0" |
     while read -r _ repo directory flags
     do

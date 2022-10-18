@@ -10,7 +10,7 @@
 
 """Sphinx rst linter."""
 
-__version__ = "0.6.6"
+__version__ = "0.6.7"
 
 import argparse
 import io
@@ -77,34 +77,50 @@ OPENERS = (
 )
 
 # fmt: off
-DIRECTIVES = [
+DIRECTIVES_CONTAINING_RST = [
     # standard docutils ones
     'admonition', 'attention', 'caution', 'class', 'compound', 'container',
-    'contents', 'csv-table', 'danger', 'date', 'default-role', 'epigraph',
-    'error', 'figure', 'footer', 'header', 'highlights', 'hint', 'image',
-    'important', 'include', 'line-block', 'list-table', 'meta', 'note',
-    'parsed-literal', 'pull-quote', 'raw', 'replace',
-    'restructuredtext-test-directive', 'role', 'rubric', 'sectnum', 'sidebar',
-    'table', 'target-notes', 'tip', 'title', 'topic', 'unicode', 'warning',
+    'danger', 'epigraph', 'error', 'figure', 'footer', 'header', 'highlights',
+    'hint', 'image', 'important', 'include', 'line-block', 'list-table', 'meta',
+    'note', 'parsed-literal', 'pull-quote', 'replace', 'sidebar', 'tip', 'topic',
+    'warning',
     # Sphinx and Python docs custom ones
     'acks', 'attribute', 'autoattribute', 'autoclass', 'autodata',
     'autoexception', 'autofunction', 'automethod', 'automodule',
     'availability', 'centered', 'cfunction', 'class', 'classmethod', 'cmacro',
-    'cmdoption', 'cmember', 'code-block', 'confval', 'cssclass', 'ctype',
+    'cmdoption', 'cmember', 'confval', 'cssclass', 'ctype',
     'currentmodule', 'cvar', 'data', 'decorator', 'decoratormethod',
     'deprecated-removed', 'deprecated(?!-removed)', 'describe', 'directive',
     'doctest', 'envvar', 'event', 'exception', 'function', 'glossary',
     'highlight', 'highlightlang', 'impl-detail', 'index', 'literalinclude',
     'method', 'miscnews', 'module', 'moduleauthor', 'opcode', 'pdbcommand',
-    'productionlist', 'program', 'role', 'sectionauthor', 'seealso',
+    'program', 'role', 'sectionauthor', 'seealso',
     'sourcecode', 'staticmethod', 'tabularcolumns', 'testcode', 'testoutput',
     'testsetup', 'toctree', 'todo', 'todolist', 'versionadded',
     'versionchanged', 'c:function', 'coroutinefunction'
 ]
+
+DIRECTIVES_CONTAINING_ARBITRARY_CONTENT = [
+    # standard docutils ones
+    'contents', 'csv-table', 'date',  'default-role', 'include', 'raw',
+    'restructuredtext-test-directive','role', 'rubric', 'sectnum', 'table',
+    'target-notes', 'title', 'unicode',
+    # Sphinx and Python docs custom ones
+    'productionlist', 'code-block',
+]
+
 # fmt: on
 
 
-ALL_DIRECTIVES = "(" + "|".join(DIRECTIVES) + ")"
+DIRECTIVES_CONTAINING_ARBITRARY_CONTENT_RE = (
+    "(" + "|".join(DIRECTIVES_CONTAINING_ARBITRARY_CONTENT) + ")"
+)
+DIRECTIVES_CONTAINING_RST_RE = "(" + "|".join(DIRECTIVES_CONTAINING_RST) + ")"
+ALL_DIRECTIVES = (
+    "("
+    + "|".join(DIRECTIVES_CONTAINING_RST + DIRECTIVES_CONTAINING_ARBITRARY_CONTENT)
+    + ")"
+)
 BEFORE_ROLE = r"(^|(?<=[\s(/'{\[*-]))"
 SIMPLENAME = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
 ROLE_TAG = rf":{SIMPLENAME}:"
@@ -780,15 +796,17 @@ def check_leaked_markup(file, lines, options=None):
 
 def is_multiline_non_rst_block(line):
     """Returns True if the next lines are an indented literal block."""
-    if line.endswith("..\n"):
+    if re.match(r"^\s*\.\.$", line):  # it's the start of a comment block.
         return True
-    if line.endswith("::\n"):
-        return True
-    if re.match(r"^ *\.\. code-block::", line):
+    if re.match(rf"^ *\.\. {DIRECTIVES_CONTAINING_RST_RE}::", line):
+        return False
+    if re.match(rf"^ *\.\. {DIRECTIVES_CONTAINING_ARBITRARY_CONTENT_RE}::", line):
         return True
     if re.match(r"^ *.. productionlist::", line):
         return True
     if re.match(r"^ *\.\. ", line) and type_of_explicit_markup(line) == "comment":
+        return True
+    if line.endswith("::\n"):  # It's a literal block
         return True
     return False
 

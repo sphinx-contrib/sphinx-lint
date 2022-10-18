@@ -294,3 +294,80 @@ def test_consecutive_production_list():
     for line in hide_non_rst_blocks(CONSECUTIVE_PRODUCTION_LIST.splitlines(True)):
         out.append(line)
     assert "".join(out) == CONSECUTIVE_PRODUCTION_LIST_EXPECTED
+
+
+ATTENTION = """
+This is a test for an attention admonition.
+
+.. attention::
+   An admonition can contain RST so it should **NOT** be dropped.
+
+and that's it.
+"""
+
+
+def test_filter_out_attention():
+    out = []
+    excluded = []
+    for line in hide_non_rst_blocks(
+        ATTENTION.splitlines(True),
+        hidden_block_cb=lambda lineno, block: excluded.append((lineno, block)),
+    ):
+        out.append(line)
+    assert "".join(out) == ATTENTION
+    assert not excluded
+
+
+NOTE = """
+This is a note, it contains rst, so it should **not** be dropped:
+
+.. note::
+
+   hello I am a not **I can** contain rst.
+
+End of it.
+"""
+
+
+def test_filter_out_note():
+    out = []
+    excluded = []
+    for line in hide_non_rst_blocks(
+        NOTE.splitlines(True),
+        hidden_block_cb=lambda lineno, block: excluded.append((lineno, block)),
+    ):
+        out.append(line)
+    assert "".join(out) == NOTE
+    assert not excluded
+
+
+UNKNOWN = """
+This is an unknown directive, to avoid false positives, just drop its content.
+
+.. this_is_not_a_known_directive::
+
+   So this can contain rst, or arbitary text.
+
+In the face of ambiguity, refuse the temptation to guess.
+"""
+
+UNKNOWN_EXPECTED = """
+This is an unknown directive, to avoid false positives, just drop its content.
+
+
+
+
+
+In the face of ambiguity, refuse the temptation to guess.
+"""
+
+
+def test_filter_out_unknown():
+    out = []
+    excluded = []
+    for line in hide_non_rst_blocks(
+        UNKNOWN.splitlines(True),
+        hidden_block_cb=lambda lineno, block: excluded.append((lineno, block)),
+    ):
+        out.append(line)
+    assert "".join(out) == UNKNOWN_EXPECTED
