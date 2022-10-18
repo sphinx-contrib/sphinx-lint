@@ -13,6 +13,7 @@
 __version__ = "0.6.6"
 
 import argparse
+import io
 import multiprocessing
 import os
 import sys
@@ -21,8 +22,8 @@ from functools import reduce
 from itertools import chain, starmap
 from os.path import exists, isfile, join, splitext
 
+from polib import pofile, POFile
 import regex as re
-
 
 # The following chars groups are from docutils:
 CLOSING_DELIMITERS = "\\\\.,;!?"
@@ -193,7 +194,7 @@ def check_python_syntax(file, lines, options=None):
 role_missing_closing_backtick = re.compile(rf"({ROLE_HEAD}`[^`]+?)[^`]*$")
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_backtick_after_role(file, lines, options=None):
     """Search for roles missing their closing backticks.
 
@@ -246,7 +247,7 @@ def clean_paragraph(paragraph):
     return paragraph.replace("\x00", "\\")
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_space_after_literal(file, lines, options=None):
     r"""Search for inline literals immediately followed by a character.
 
@@ -267,7 +268,7 @@ def check_missing_space_after_literal(file, lines, options=None):
                 )
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
     r"""Search for unbalanced inline literals delimiters.
 
@@ -445,7 +446,7 @@ backtick_in_front_of_role = re.compile(
 )
 
 
-@checker(".rst", enabled=False)
+@checker(".rst", ".po", enabled=False)
 def check_default_role(file, lines, options=None):
     """Search for default roles (but they are allowed in many projects).
 
@@ -471,7 +472,7 @@ def check_default_role(file, lines, options=None):
             yield lno, "default role used (hint: for inline literals, use double backticks)"
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_directive_with_three_dots(file, lines, options=None):
     """Search for directives with three dots instead of two.
 
@@ -483,7 +484,7 @@ def check_directive_with_three_dots(file, lines, options=None):
             yield lno, "directive should start with two dots, not three."
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_directive_missing_colons(file, lines, options=None):
     """Search for directive wrongly typed as comments.
 
@@ -495,7 +496,7 @@ def check_directive_missing_colons(file, lines, options=None):
             yield lno, "comment seems to be intended as a directive"
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_space_after_role(file, lines, options=None):
     r"""Search for roles immediately followed by a character.
 
@@ -515,7 +516,7 @@ def check_missing_space_after_role(file, lines, options=None):
             yield lno, f"role missing (escaped) space after role: {role.group(0)!r}"
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_role_without_backticks(file, lines, options=None):
     """Search roles without backticks.
 
@@ -528,7 +529,7 @@ def check_role_without_backticks(file, lines, options=None):
             yield lno, f"role with no backticks: {no_backticks.group(0)!r}"
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_backtick_before_role(file, lines, options=None):
     """Search for roles preceded by a backtick.
 
@@ -542,7 +543,7 @@ def check_backtick_before_role(file, lines, options=None):
             yield lno, "superfluous backtick in front of role"
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_space_in_hyperlink(file, lines, options=None):
     """Search for hyperlinks missing a space.
 
@@ -557,7 +558,7 @@ def check_missing_space_in_hyperlink(file, lines, options=None):
                 yield lno, "missing space before < in hyperlink"
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_underscore_after_hyperlink(file, lines, options=None):
     """Search for hyperlinks missing underscore after their closing backtick.
 
@@ -572,7 +573,7 @@ def check_missing_underscore_after_hyperlink(file, lines, options=None):
                 yield lno, "missing underscore after closing backtick in hyperlink"
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_role_with_double_backticks(file, lines, options=None):
     """Search for roles with double backticks.
 
@@ -638,7 +639,7 @@ def looks_like_glued(match):
     return True
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_space_before_role(file, lines, options=None):
     """Search for missing spaces before roles.
 
@@ -658,7 +659,7 @@ def check_missing_space_before_role(file, lines, options=None):
                 yield paragraph_lno + error_offset, f"role missing opening tag colon ({match.group(0)})."
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_space_before_default_role(file, lines, options=None):
     """Search for missing spaces before default role.
 
@@ -681,7 +682,7 @@ def check_missing_space_before_default_role(file, lines, options=None):
             )
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_hyperlink_reference_missing_backtick(file, lines, options=None):
     """Search for missing backticks in front of hyperlink references.
 
@@ -702,7 +703,7 @@ def check_hyperlink_reference_missing_backtick(file, lines, options=None):
             )
 
 
-@checker(".rst")
+@checker(".rst", ".po")
 def check_missing_colon_in_role(file, lines, options=None):
     """Search for missing colons in roles.
 
@@ -715,7 +716,7 @@ def check_missing_colon_in_role(file, lines, options=None):
             yield lno, f"role missing colon before first backtick ({match.group(0)})."
 
 
-@checker(".py", ".rst", rst_only=False)
+@checker(".py", ".rst", ".po", rst_only=False)
 def check_carriage_return(file, lines, options=None):
     r"""Check for carriage returns (\r) in lines."""
     for lno, line in enumerate(lines):
@@ -723,7 +724,7 @@ def check_carriage_return(file, lines, options=None):
             yield lno + 1, "\\r in line"
 
 
-@checker(".py", ".rst", rst_only=False)
+@checker(".py", ".rst", ".po", rst_only=False)
 def check_horizontal_tab(file, lines, options=None):
     r"""Check for horizontal tabs (\t) in lines."""
     for lno, line in enumerate(lines):
@@ -731,7 +732,7 @@ def check_horizontal_tab(file, lines, options=None):
             yield lno + 1, "OMG TABS!!!1"
 
 
-@checker(".py", ".rst", rst_only=False)
+@checker(".py", ".rst", ".po", rst_only=False)
 def check_trailing_whitespace(file, lines, options=None):
     """Check for trailing whitespaces at end of lines."""
     for lno, line in enumerate(lines):
@@ -740,14 +741,14 @@ def check_trailing_whitespace(file, lines, options=None):
             yield lno + 1, "trailing whitespace"
 
 
-@checker(".py", ".rst", rst_only=False)
+@checker(".py", ".rst", ".po", rst_only=False)
 def check_missing_final_newline(file, lines, options=None):
     """Check that the last line of the file ends with a newline."""
     if lines and not lines[-1].endswith("\n"):
         yield len(lines), "No newline at end of file."
 
 
-@checker(".rst", enabled=False, rst_only=True)
+@checker(".rst", ".po", enabled=False, rst_only=True)
 def check_line_too_long(file, lines, options=None):
     """Check for line length; this checker is not run by default."""
     for lno, line in enumerate(lines):
@@ -849,7 +850,7 @@ triple_backticks = re.compile(
 )
 
 
-@checker(".rst", enabled=False)
+@checker(".rst", ".po", enabled=False)
 def check_triple_backticks(file, lines, options=None):
     """Check for triple backticks, like ```Point``` (but it's a valid syntax).
 
@@ -866,7 +867,7 @@ def check_triple_backticks(file, lines, options=None):
             yield lno + 1, "There's no rst syntax using triple backticks"
 
 
-@checker(".rst", rst_only=False)
+@checker(".rst", ".po", rst_only=False)
 def check_bad_dedent(file, lines, options=None):
     """Check for mis-alignment in indentation in code blocks.
 
@@ -1023,6 +1024,19 @@ def check_text(filename, text, checkers, options=None):
     return errors
 
 
+def po2rst(text):
+    """Extract msgstr entries from a po content, keeping linenos."""
+    output = []
+    po = pofile(text, encoding="UTF-8")
+    for entry in po.translated_entries():
+        # Don't check original msgid, assume it's checked directly.
+        while len(output) + 1 < entry.linenum:
+            output.append("\n")
+        for line in entry.msgstr.splitlines():
+            output.append(line + "\n")
+    return "".join(output)
+
+
 def check_file(filename, checkers, options: CheckersOptions = None):
     ext = splitext(filename)[1]
     if not any(ext in checker.suffixes for checker in checkers):
@@ -1030,6 +1044,8 @@ def check_file(filename, checkers, options: CheckersOptions = None):
     try:
         with open(filename, encoding="utf-8") as f:
             text = f.read()
+        if filename.endswith(".po"):
+            text = po2rst(text)
     except OSError as err:
         print(f"{filename}: cannot open: {err}")
         return Counter({4: 1})
