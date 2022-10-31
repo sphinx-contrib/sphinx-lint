@@ -8,7 +8,7 @@ import shlex
 
 import pytest
 
-from sphinxlint import main
+from sphinxlint.__main__ import main
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
