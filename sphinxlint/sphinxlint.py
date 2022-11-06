@@ -19,7 +19,7 @@ class CheckersOptions:
 def check_text(filename, text, checkers, options=None):
     if options is None:
         options = CheckersOptions()
-    errors = Counter()
+    errors = []
     ext = splitext(filename)[1]
     checkers = {checker for checker in checkers if ext in checker.suffixes}
     lines = text.splitlines(keepends=True)
@@ -31,8 +31,7 @@ def check_text(filename, text, checkers, options=None):
         for lno, msg in check(
             filename, lines_with_rst_only if check.rst_only else lines, options
         ):
-            print(f"{filename}:{lno}: {msg} ({check.name})")
-            errors[check.name] += 1
+            errors.append(f"{filename}:{lno}: {msg} ({check.name})")
     return errors
 
 
@@ -46,9 +45,7 @@ def check_file(filename, checkers, options: CheckersOptions = None):
         if filename.endswith(".po"):
             text = po2rst(text)
     except OSError as err:
-        print(f"{filename}: cannot open: {err}")
-        return Counter({4: 1})
+        return [f"{filename}: cannot open: {err}"]
     except UnicodeDecodeError as err:
-        print(f"{filename}: cannot decode as UTF-8: {err}")
-        return Counter({4: 1})
+        return [f"{filename}: cannot decode as UTF-8: {err}"]
     return check_text(filename, text, checkers, options)

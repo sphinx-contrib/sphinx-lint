@@ -112,6 +112,24 @@ def walk(path, ignore_list):
             yield file if file[:2] != "./" else file[2:]
 
 
+def _check_file(todo):
+    """Wrapper to call check_file with arguments given by
+    multiprocessing.imap_unordered."""
+    return check_file(*todo)
+
+
+def print_results(results):
+    """Print results (or a message if nothing is to be printed)."""
+    qty = 0
+    for result in results:
+        for line in result:
+            print(line)
+            qty += 1
+    if qty == 0:
+        print("No problems found.")
+    return qty
+
+
 def main(argv=None):
     enabled_checkers, args = parse_args(argv)
     options = CheckersOptions.from_argparse(args)
@@ -140,17 +158,13 @@ def main(argv=None):
     ]
 
     if len(todo) < 8:
-        results = starmap(check_file, todo)
+        count = print_results(starmap(check_file, todo))
     else:
         with multiprocessing.Pool() as pool:
-            results = pool.starmap(check_file, todo)
+            count = print_results(pool.imap_unordered(_check_file, todo))
             pool.close()
             pool.join()
 
-    count = reduce(Counter.__add__, results)
-
-    if not count:
-        print("No problems found.")
     return int(bool(count))
 
 
