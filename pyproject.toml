@@ -31,10 +31,10 @@ dynamic = ["version"]
 repository = "https://github.com/sphinx-contrib/sphinx-lint"
 
 [project.scripts]
-sphinx-lint = "sphinxlint:main"
+sphinx-lint = "sphinxlint.__main__:main"
 
 [tool.setuptools]
-py-modules = ["sphinxlint"]
+packages = ["sphinxlint"]
 include-package-data = false
 dynamic.version.attr = "sphinxlint.__version__"
 

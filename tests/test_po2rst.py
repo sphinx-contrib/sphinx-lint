@@ -1,4 +1,4 @@
-from sphinxlint import po2rst
+from sphinxlint.utils import po2rst
 
 
 def test_po2rst():

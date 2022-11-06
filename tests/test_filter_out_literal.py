@@ -1,4 +1,4 @@
-from sphinxlint import hide_non_rst_blocks
+from sphinxlint.utils import hide_non_rst_blocks
 
 
 LITERAL = r"""

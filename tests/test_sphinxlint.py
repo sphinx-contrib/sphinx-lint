@@ -1,10 +1,10 @@
 from pathlib import Path
 
-import sphinxlint
+from sphinxlint.utils import paragraphs
 
 import pytest
 
-from sphinxlint import main
+from sphinxlint.__main__ import main
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -71,7 +71,7 @@ def test_sphinxlint_shall_not_pass(file, expected_errors, capsys):
 def test_paragraphs(file):
     with open(file) as f:
         lines = f.readlines()
-    actual = sphinxlint.paragraphs(lines)
+    actual = paragraphs(lines)
     for lno, para in actual:
         firstpline = para.splitlines(keepends=True)[0]
         # check that the first line of the paragraph matches the
