@@ -177,7 +177,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
 def type_of_explicit_markup(line):
     """Tell apart various explicit markup blocks."""
     line = line.lstrip()
-    if re.match(rf"\.\. {rst.ALL_DIRECTIVES}::", line):
+    if re.match(rf"\.\. {rst.get_all_directives()}::", line):
         return "directive"
     if re.match(r"\.\. \[[0-9]+\] ", line):
         return "footnote"

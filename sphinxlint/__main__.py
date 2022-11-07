@@ -7,6 +7,8 @@ from functools import reduce
 from itertools import chain, starmap
 
 from sphinxlint import check_file
+from sphinxlint import rst
+from sphinxlint.config import get_config
 from sphinxlint.checkers import all_checkers
 from sphinxlint.sphinxlint import CheckersOptions
 
@@ -15,6 +17,11 @@ def parse_args(argv=None):
     """Parse command line argument."""
     if argv is None:
         argv = sys.argv
+    if argv[1:2] == ["init", "directives"]:
+        from directivegetter import collect_directives
+
+        raise SystemExit(collect_directives(argv[2:]))
+
     parser = argparse.ArgumentParser(description=__doc__)
 
     enabled_checkers_names = {
@@ -131,6 +138,11 @@ def print_results(results):
 
 
 def main(argv=None):
+    config = get_config()
+
+    # Append extra directives
+    rst.DIRECTIVES_CONTAINING_ARBITRARY_CONTENT.extend(config.get("known_directives", []))
+
     enabled_checkers, args = parse_args(argv)
     options = CheckersOptions.from_argparse(args)
     if args.list:
