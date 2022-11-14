@@ -29,28 +29,25 @@
 # https://github.com/spyder-ide/spyder-docs doc --enable all --disable line-too-long
 # https://github.com/sympy/sympy doc
 # https://github.com/sphinx-doc/sphinx doc --enable line-too-long --max-line-length 85
-
-# This one could be enabled soon:
-## https://github.com/python/python-docs-fr . --enable all --disable line-too-long
+# https://github.com/python/python-docs-fr . --enable all --disable line-too-long
 
 grep '^# https://' "$0" |
     while read -r _ repo directory flags
     do
         name="$(basename "$repo")"
-        if ! [ -d "tests/fixtures/friends/$name" ]
+        target="tests/fixtures/friends/$name"
+        rm -fr "$target"
+        if [ "$directory" = "." ]
         then
-            if [ "$directory" != "." ]
-            then
-                git clone --depth 1 --sparse --filter=blob:none "$repo" "tests/fixtures/friends/$name" &&
-                    (
-                        cd "tests/fixtures/friends/$name" || exit
-                        rm *  # Removes files at root of repo (READMEs, conftest.py, ...)
-                        git sparse-checkout init --cone
-                        git sparse-checkout set "$directory"
-                    )
-            else
-                git clone --depth 1 "$repo" "tests/fixtures/friends/$name"
-            fi
+            git clone --depth 1 "$repo" "tests/fixtures/friends/$name"
+        else
+            git clone --depth 1 --sparse --filter=blob:none "$repo" "tests/fixtures/friends/$name" &&
+                (
+                    cd "tests/fixtures/friends/$name" || exit
+                    rm *  # Removes files at root of repo (READMEs, conftest.py, ...)
+                    git sparse-checkout init --cone
+                    git sparse-checkout set "$directory"
+                )
         fi
         printf "%s\n" "$flags" > "tests/fixtures/friends/$name/flags"
     done
