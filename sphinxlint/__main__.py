@@ -1,4 +1,5 @@
 import argparse
+import enum
 import multiprocessing
 import os
 import sys
@@ -7,6 +8,18 @@ from itertools import chain, starmap
 from sphinxlint import check_file
 from sphinxlint.checkers import all_checkers
 from sphinxlint.sphinxlint import CheckersOptions
+
+
+class SortField(enum.Enum):
+    """Fields available for sorting error reports"""
+
+    FILENAME = 0
+    LINE = 1
+    ERROR_TYPE = 2
+
+    @staticmethod
+    def as_supported_options():
+        return ",".join(field.name.lower() for field in SortField)
 
 
 def parse_args(argv=None):
@@ -32,6 +45,18 @@ def parse_args(argv=None):
                 enabled_checkers_names.clear()
             else:
                 enabled_checkers_names.difference_update(values.split(","))
+
+    class StoreSortFieldAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            sort_fields = []
+            for field_name in values.split(","):
+                try:
+                    sort_fields.append(SortField[field_name.upper()])
+                except KeyError:
+                    raise ValueError(
+                        f"Unsupported sort field: {field_name}, supported values are {SortField.as_supported_options()}"
+                    ) from None
+            setattr(namespace, self.dest, sort_fields)
 
     parser.add_argument(
         "-v",
@@ -77,6 +102,14 @@ def parse_args(argv=None):
         default=80,
         type=int,
     )
+    parser.add_argument(
+        "-s",
+        "--sort-by",
+        action=StoreSortFieldAction,
+        help="comma-separated list of fields used to sort errors by. Available "
+        f"fields are: {SortField.as_supported_options()}",
+    )
+
     parser.add_argument("paths", default=".", nargs="*")
     args = parser.parse_args(argv[1:])
     try:
@@ -116,13 +149,31 @@ def _check_file(todo):
     return check_file(*todo)
 
 
-def print_results(results):
-    """Print results (or a message if nothing is to be printed)."""
+def sort_errors(results, sorted_by):
+    """Flattens and potentially sorts errors based on user prefernces"""
+    if not sorted_by:
+        for results in results:
+            yield from results
+        return
+    errors = list(error for errors in results for error in errors)
+    # sorting is stable in python, so we can sort in reverse order to get the
+    # ordering specified by the user
+    for sort_field in reversed(sorted_by):
+        if sort_field == SortField.ERROR_TYPE:
+            errors.sort(key=lambda error: error.checker_name)
+        elif sort_field == SortField.FILENAME:
+            errors.sort(key=lambda error: error.filename)
+        elif sort_field == SortField.LINE:
+            errors.sort(key=lambda error: error.line_no)
+    yield from errors
+
+
+def print_errors(errors):
+    """Print errors (or a message if nothing is to be printed)."""
     qty = 0
-    for result in results:
-        for error in result:
-            print(error)
-            qty += 1
+    for error in errors:
+        print(error)
+        qty += 1
     if qty == 0:
         print("No problems found.")
     return qty
@@ -156,10 +207,12 @@ def main(argv=None):
     ]
 
     if len(todo) < 8:
-        count = print_results(starmap(check_file, todo))
+        count = print_errors(sort_errors(starmap(check_file, todo), args.sort_by))
     else:
         with multiprocessing.Pool() as pool:
-            count = print_results(pool.imap_unordered(_check_file, todo))
+            count = print_errors(
+                sort_errors(pool.imap_unordered(_check_file, todo), args.sort_by)
+            )
             pool.close()
             pool.join()
 
