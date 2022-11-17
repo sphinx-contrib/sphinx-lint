@@ -1,7 +1,21 @@
 from collections import Counter
+from dataclasses import dataclass
 from os.path import splitext
 
 from sphinxlint.utils import hide_non_rst_blocks, po2rst
+
+
+@dataclass(frozen=True)
+class LintError:
+    """A linting error found by one of the checkers"""
+
+    filename: str
+    line_no: int
+    msg: str
+    checker_name: str
+
+    def __str__(self):
+        return f"{self.filename}:{self.line_no}: {self.msg} ({self.checker_name})"
 
 
 class CheckersOptions:
@@ -31,7 +45,7 @@ def check_text(filename, text, checkers, options=None):
         for lno, msg in check(
             filename, lines_with_rst_only if check.rst_only else lines, options
         ):
-            errors.append(f"{filename}:{lno}: {msg} ({check.name})")
+            errors.append(LintError(filename, lno, msg, check.name))
     return errors
 
 
