@@ -122,8 +122,8 @@ def print_results(results):
     """Print results (or a message if nothing is to be printed)."""
     qty = 0
     for result in results:
-        for line in result:
-            print(line)
+        for error in result:
+            print(error)
             qty += 1
     if qty == 0:
         print("No problems found.")
