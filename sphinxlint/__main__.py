@@ -2,8 +2,6 @@ import argparse
 import multiprocessing
 import os
 import sys
-from collections import Counter
-from functools import reduce
 from itertools import chain, starmap
 
 from sphinxlint import check_file
