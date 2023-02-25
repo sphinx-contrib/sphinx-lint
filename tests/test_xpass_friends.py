@@ -16,7 +16,7 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
 @pytest.mark.parametrize(
     "file",
-    [str(f) for f in (FIXTURE_DIR / "friends").iterdir() if ".DS_Store" not in str(f)]
+    [str(f) for f in (FIXTURE_DIR / "friends").iterdir() if f.name != ".DS_Store"]
     if (FIXTURE_DIR / "friends").is_dir()
     else [],
 )
