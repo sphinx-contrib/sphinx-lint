@@ -28,6 +28,11 @@ But even if already indented it should work, see the next example.
    Yet this line should not be dropped.
 
 This one neither.
+
+.. doctest::
+
+   >>> # This should be dropped
+   >>> setcontext(ExtendedContext)
 """
 
 
@@ -58,6 +63,11 @@ But even if already indented it should work, see the next example.
    Yet this line should not be dropped.
 
 This one neither.
+
+.. doctest::
+
+
+
 """
 
 
