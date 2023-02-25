@@ -447,3 +447,12 @@ def check_bad_dedent(file, lines, options=None):
 
     list(hide_non_rst_blocks(lines, hidden_block_cb=check_block))
     yield from errors
+
+
+@checker(".rst", rst_only=True)
+def check_dangling_hyphen(file, lines, options):
+    """Check for lines ending in a hyphen."""
+    for lno, line in enumerate(lines):
+        stripped_line = line.rstrip("\n")
+        if re.match(r".*[a-z]-$", stripped_line):
+            yield lno + 1, f"Line ends with dangling hyphen"
