@@ -71,7 +71,7 @@ DIRECTIVES_CONTAINING_RST = [
     'cmdoption', 'cmember', 'confval', 'cssclass', 'ctype',
     'currentmodule', 'cvar', 'data', 'decorator', 'decoratormethod',
     'deprecated-removed', 'deprecated(?!-removed)', 'describe', 'directive',
-    'doctest', 'envvar', 'event', 'exception', 'function', 'glossary',
+    'envvar', 'event', 'exception', 'function', 'glossary',
     'highlight', 'highlightlang', 'impl-detail', 'index', 'literalinclude',
     'method', 'miscnews', 'module', 'moduleauthor', 'opcode', 'pdbcommand',
     'program', 'role', 'sectionauthor', 'seealso',
@@ -86,7 +86,7 @@ DIRECTIVES_CONTAINING_ARBITRARY_CONTENT = [
     'restructuredtext-test-directive', 'role', 'rubric', 'sectnum', 'table',
     'target-notes', 'title', 'unicode',
     # Sphinx and Python docs custom ones
-    'productionlist', 'code-block',
+    'code-block', 'doctest', 'productionlist',
 ]
 
 # fmt: on

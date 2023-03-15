@@ -1,6 +1,6 @@
 """This test needs `download-more-tests.sh`.
 
-This is usefull to avoid a sphinx-lint release to break many CIs.
+This is useful to avoid a sphinx-lint release to break many CIs.
 """
 
 from pathlib import Path
@@ -16,7 +16,7 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
 @pytest.mark.parametrize(
     "file",
-    [str(f) for f in (FIXTURE_DIR / "friends").iterdir()]
+    [str(f) for f in (FIXTURE_DIR / "friends").iterdir() if f.name != ".DS_Store"]
     if (FIXTURE_DIR / "friends").is_dir()
     else [],
 )
