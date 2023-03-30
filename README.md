@@ -4,7 +4,7 @@
  ![Monthly downloads](https://img.shields.io/pypi/dm/sphinx-lint)
  ![Supported Python Version](https://img.shields.io/pypi/pyversions/sphinx-lint.svg)
 ](https://pypi.org/project/sphinx-lint)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sphinx-contrib/sphinx-lint/Tests/main)](https://github.com/sphinx-contrib/sphinx-lint/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sphinx-contrib/sphinx-lint/tests.yml?branch=main)](https://github.com/sphinx-contrib/sphinx-lint/actions)
 
 Sphinx Lint is based on [rstlint.py from
 CPython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
