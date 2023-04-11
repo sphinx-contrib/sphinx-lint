@@ -165,7 +165,10 @@ def check_missing_space_after_role(file, lines, options=None):
     # While this is not:
     #    The :literal:`:exc:`Exceptions``s
     role_body = rf"([^`]|\s`+|\\`|:{rst.SIMPLENAME}:`([^`]|\s`+|\\`)+`)+"
-    suspicious_role = re.compile(f":{rst.SIMPLENAME}:`{role_body}`s")
+    allowed_after_role = " |"  # '|' is allowed for roles in tables.
+    suspicious_role = re.compile(
+        f":{rst.SIMPLENAME}:`{role_body}`[^{allowed_after_role}]"
+    )
     for lno, line in enumerate(lines, start=1):
         line = clean_paragraph(line)
         role = suspicious_role.search(line)

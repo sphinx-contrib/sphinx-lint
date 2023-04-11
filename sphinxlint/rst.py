@@ -181,7 +181,7 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
                        # character from the start-string.
         {QUOTE_PAIRS_NEGATIVE_LOOKBEHIND}
         .*?
-        (?<=\S)       # Inline markup end-strings must be immediately preceded
+        (?<=\x00\ |\S)# Inline markup end-strings must be immediately preceded
                       # by non-whitespace.
         {end_string}  # Inline markup end
     )
