@@ -40,6 +40,41 @@ as Sphinx Lint works line by line it will inevitably think the `:meth:` role is 
 To avoid false positives, some rules are skipped if we're in a table.
 
 
+## Contributing
+
+A quick way to test if some syntax is valid from a pure
+reStructuredText point of view, one case use `docutils`'s `pseudoxml`
+writer, like:
+
+```text
+$ docutils --writer=pseudoxml tests/fixtures/xpass/role-in-code-sample.rst
+<document source="tests/fixtures/xpass/role-in-code-sample.rst">
+    <paragraph>
+        Found in the pandas documentation, this is valid:
+    <bullet_list bullet="*">
+        <list_item>
+            <paragraph>
+                A pandas class (in the form
+                <literal>
+                    :class:`pandas.Series`
+                )
+        <list_item>
+            <paragraph>
+                A pandas method (in the form
+                <literal>
+                    :meth:`pandas.Series.sum`
+                )
+        <list_item>
+            <paragraph>
+                A pandas function (in the form
+                <literal>
+                    :func:`pandas.to_datetime`
+                )
+    <paragraph>
+        it's documenting roles using code samples (double backticks).
+```
+
+
 ## Releasing
 
 First test with friends projects by running:
