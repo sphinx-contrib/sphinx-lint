@@ -117,6 +117,10 @@ def check_default_role(file, lines, options=None):
         if match:
             before_match = line[: match.start()]
             after_match = line[match.end() :]
+            stripped_line = line.strip()
+            if (stripped_line.startswith("|") and stripped_line.endswith("|") and
+                stripped_line.count("|") >= 4 and "|" in match.group(0)):
+                return  # we don't handle tables yet.
             if re.search(rst.ROLE_TAG + "$", before_match):
                 # It's not a default role: it starts with a tag.
                 continue
