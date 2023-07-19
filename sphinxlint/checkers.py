@@ -165,7 +165,12 @@ def check_missing_space_after_role(file, lines, options=None):
     # While this is not:
     #    The :literal:`:exc:`Exceptions``s
     role_body = rf"([^`]|\s`+|\\`|:{rst.SIMPLENAME}:`([^`]|\s`+|\\`)+`)+"
-    allowed_after_role = " |"  # '|' is allowed for roles in tables.
+    allowed_after_role = (
+        rst.ASCII_ALLOWED_AFTER_INLINE_MARKUP
+        + rst.UNICODE_ALLOWED_AFTER_INLINE_MARKUP
+        + r"|\s"
+    )
+
     suspicious_role = re.compile(
         f":{rst.SIMPLENAME}:`{role_body}`[^{allowed_after_role}]"
     )
