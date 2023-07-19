@@ -118,8 +118,12 @@ def check_default_role(file, lines, options=None):
             before_match = line[: match.start()]
             after_match = line[match.end() :]
             stripped_line = line.strip()
-            if (stripped_line.startswith("|") and stripped_line.endswith("|") and
-                stripped_line.count("|") >= 4 and "|" in match.group(0)):
+            if (
+                stripped_line.startswith("|")
+                and stripped_line.endswith("|")
+                and stripped_line.count("|") >= 4
+                and "|" in match.group(0)
+            ):
                 return  # we don't handle tables yet.
             if re.search(rst.ROLE_TAG + "$", before_match):
                 # It's not a default role: it starts with a tag.
@@ -267,7 +271,10 @@ def check_role_with_double_backticks(file, lines, options=None):
             before = paragraph[: inline_literal.start()]
             if re.search(rst.ROLE_TAG + "$", before):
                 error_offset = paragraph[: inline_literal.start()].count("\n")
-                yield paragraph_lno + error_offset, "role use a single backtick, double backtick found."
+                yield (
+                    paragraph_lno + error_offset,
+                    "role use a single backtick, double backtick found.",
+                )
             paragraph = (
                 paragraph[: inline_literal.start()] + paragraph[inline_literal.end() :]
             )
@@ -288,9 +295,15 @@ def check_missing_space_before_role(file, lines, options=None):
         if match:
             error_offset = paragraph[: match.start()].count("\n")
             if looks_like_glued(match):
-                yield paragraph_lno + error_offset, f"missing space before role ({match.group(0)})."
+                yield (
+                    paragraph_lno + error_offset,
+                    f"missing space before role ({match.group(0)}).",
+                )
             else:
-                yield paragraph_lno + error_offset, f"role missing opening tag colon ({match.group(0)})."
+                yield (
+                    paragraph_lno + error_offset,
+                    f"role missing opening tag colon ({match.group(0)}).",
+                )
 
 
 @checker(".rst", ".po")
@@ -459,4 +472,4 @@ def check_dangling_hyphen(file, lines, options):
     for lno, line in enumerate(lines):
         stripped_line = line.rstrip("\n")
         if re.match(r".*[a-z]-$", stripped_line):
-            yield lno + 1, f"Line ends with dangling hyphen"
+            yield lno + 1, "Line ends with dangling hyphen"

@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from sphinxlint.utils import paragraphs
-
 import pytest
 
 from sphinxlint.__main__ import main
+from sphinxlint.utils import paragraphs
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -69,8 +68,8 @@ def test_sphinxlint_shall_not_pass(file, expected_errors, capsys):
 
 @pytest.mark.parametrize("file", [str(FIXTURE_DIR / "paragraphs.rst")])
 def test_paragraphs(file):
-    with open(file) as f:
-        lines = f.readlines()
+    with open(file, encoding="UTF-8") as ifile:
+        lines = ifile.readlines()
     actual = paragraphs(lines)
     for lno, para in actual:
         firstpline = para.splitlines(keepends=True)[0]
