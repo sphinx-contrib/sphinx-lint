@@ -145,10 +145,10 @@ BEFORE_ROLE = r"(^|(?<=[\s(/'{\[*-]))"
 ROLE_TAG = rf":{SIMPLENAME}:"
 ROLE_HEAD = rf"({BEFORE_ROLE}:{SIMPLENAME}:)"  # A role, with a clean start
 
-ASCII_ALLOWED_BEFORE_INLINE_MARKUP = r"""[-:/'"<(\[{]"""
-UNICODE_ALLOWED_BEFORE_INLINE_MARKUP = r"[\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
-ASCII_ALLOWED_AFTER_INLINE_MARKUP = r"""[-.,:;!?/'")\]}>]"""
-UNICODE_ALLOWED_AFTER_INLINE_MARKUP = r"[\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}]"
+ASCII_ALLOWED_BEFORE_INLINE_MARKUP = r"""-:/'"<(\[{"""
+UNICODE_ALLOWED_BEFORE_INLINE_MARKUP = r"\p{Ps}\p{Pi}\p{Pf}\p{Pd}\p{Po}"
+ASCII_ALLOWED_AFTER_INLINE_MARKUP = r"""-.,:;!?/'")\]}>"""
+UNICODE_ALLOWED_AFTER_INLINE_MARKUP = r"\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}"
 
 
 def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
@@ -167,9 +167,9 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
     (?<=             # Inline markup start-strings must:
         ^|           # start a text block
         \s|          # or be immediately preceded by whitespace,
-        {ASCII_ALLOWED_BEFORE_INLINE_MARKUP}|  # one of the ASCII characters
-        {UNICODE_ALLOWED_BEFORE_INLINE_MARKUP} # or a similar non-ASCII
-                                               # punctuation character.
+        [{ASCII_ALLOWED_BEFORE_INLINE_MARKUP}]|  # one of the ASCII characters
+        [{UNICODE_ALLOWED_BEFORE_INLINE_MARKUP}] # or a similar non-ASCII
+                                                 # punctuation character.
         {extra_allowed_before}
     )
 
@@ -181,7 +181,7 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
                        # character from the start-string.
         {QUOTE_PAIRS_NEGATIVE_LOOKBEHIND}
         .*?
-        (?<=\S)       # Inline markup end-strings must be immediately preceded
+        (?<=\x00\ |\S)# Inline markup end-strings must be immediately preceded
                       # by non-whitespace.
         {end_string}  # Inline markup end
     )
@@ -190,9 +190,9 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
         $|    # end a text block or
         \s|   # be immediately followed by whitespace,
         \x00|
-        {ASCII_ALLOWED_AFTER_INLINE_MARKUP}|  # one of the ASCII characters
-        {UNICODE_ALLOWED_AFTER_INLINE_MARKUP} # or a similar non-ASCII
-                                              # punctuation character.
+        [{ASCII_ALLOWED_AFTER_INLINE_MARKUP}]|  # one of the ASCII characters
+        [{UNICODE_ALLOWED_AFTER_INLINE_MARKUP}] # or a similar non-ASCII
+                                                # punctuation character.
     )
     """,
         flags=re.VERBOSE | re.DOTALL,
@@ -213,9 +213,9 @@ NORMAL_ROLE_RE = re.compile(
     (?<=             # Inline markup start-strings must:
         ^|           # start a text block
         \s|          # or be immediately preceded by whitespace,
-        {ASCII_ALLOWED_BEFORE_INLINE_MARKUP}|  # one of the ASCII characters
-        {UNICODE_ALLOWED_BEFORE_INLINE_MARKUP} # or a similar non-ASCII
-                                               # punctuation character.
+        [{ASCII_ALLOWED_BEFORE_INLINE_MARKUP}]|  # one of the ASCII characters
+        [{UNICODE_ALLOWED_BEFORE_INLINE_MARKUP}] # or a similar non-ASCII
+                                                 # punctuation character.
     )
 
     :{SIMPLENAME}:{INTERPRETED_TEXT_RE.pattern}""",
