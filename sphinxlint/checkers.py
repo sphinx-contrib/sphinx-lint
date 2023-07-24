@@ -55,7 +55,7 @@ def check_missing_backtick_after_role(file, lines, options=None):
     Good: :fct:`foo`
     """
     for paragraph_lno, paragraph in paragraphs(lines):
-        if paragraph.count("|") > 4:
+        if rst.paragraph_looks_like_a_table(paragraph):
             return  # we don't handle tables yet.
         error = rst.ROLE_MISSING_CLOSING_BACKTICK_RE.search(paragraph)
         if error:
@@ -71,7 +71,7 @@ def check_missing_space_after_literal(file, lines, options=None):
     Good: ``items``\ s
     """
     for paragraph_lno, paragraph in paragraphs(lines):
-        if paragraph.count("|") > 4:
+        if rst.paragraph_looks_like_a_table(paragraph):
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         for role in re.finditer("``.+?``(?!`).", paragraph, flags=re.DOTALL):
@@ -92,7 +92,7 @@ def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
     Good: ``hello`` world
     """
     for paragraph_lno, paragraph in paragraphs(lines):
-        if paragraph.count("|") > 4:
+        if rst.paragraph_looks_like_a_table(paragraph):
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         for lone_double_backtick in re.finditer("(?<!`)``(?!`)", paragraph):
@@ -117,13 +117,7 @@ def check_default_role(file, lines, options=None):
         if match:
             before_match = line[: match.start()]
             after_match = line[match.end() :]
-            stripped_line = line.strip()
-            if (
-                stripped_line.startswith("|")
-                and stripped_line.endswith("|")
-                and stripped_line.count("|") >= 4
-                and "|" in match.group(0)
-            ):
+            if rst.line_looks_like_a_table(line):
                 return  # we don't handle tables yet.
             if re.search(rst.ROLE_TAG + "$", before_match):
                 # It's not a default role: it starts with a tag.
@@ -257,7 +251,7 @@ def check_role_with_double_backticks(file, lines, options=None):
     for paragraph_lno, paragraph in paragraphs(lines):
         if "`" not in paragraph:
             continue
-        if paragraph.count("|") > 4:
+        if rst.paragraph_looks_like_a_table(paragraph):
             return  # we don't handle tables yet.
         paragraph = escape2null(paragraph)
         while True:
@@ -288,7 +282,7 @@ def check_missing_space_before_role(file, lines, options=None):
     Good: the :fct:`sum`, :issue:`123`, :c:func:`foo`
     """
     for paragraph_lno, paragraph in paragraphs(lines):
-        if paragraph.count("|") > 4:
+        if rst.paragraph_looks_like_a_table(paragraph):
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         match = rst.ROLE_GLUED_WITH_WORD_RE.search(paragraph)
@@ -314,7 +308,7 @@ def check_missing_space_before_default_role(file, lines, options=None):
     Good: the `sum`
     """
     for paragraph_lno, paragraph in paragraphs(lines):
-        if paragraph.count("|") > 4:
+        if rst.paragraph_looks_like_a_table(paragraph):
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         paragraph = rst.INTERPRETED_TEXT_RE.sub("", paragraph)
@@ -337,7 +331,7 @@ def check_hyperlink_reference_missing_backtick(file, lines, options=None):
     Good: `Misc/NEWS <https://github.com/python/cpython/blob/v3.2.6/Misc/NEWS>`_
     """
     for paragraph_lno, paragraph in paragraphs(lines):
-        if paragraph.count("|") > 4:
+        if rst.paragraph_looks_like_a_table(paragraph):
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         paragraph = rst.INTERPRETED_TEXT_RE.sub("", paragraph)
