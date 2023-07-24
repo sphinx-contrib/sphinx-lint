@@ -55,7 +55,7 @@ def parse_args(argv=None):
                 except KeyError:
                     raise ValueError(
                         f"Unsupported sort field: {field_name}, "
-                        "supported values are {SortField.as_supported_options()}"
+                        f"supported values are {SortField.as_supported_options()}"
                     ) from None
             setattr(namespace, self.dest, sort_fields)
 
