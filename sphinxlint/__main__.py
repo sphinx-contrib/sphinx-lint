@@ -110,10 +110,7 @@ def parse_args(argv=None):
         f"fields are: {SortField.as_supported_options()}",
     )
     parser.add_argument(
-        "--version",
-        action="version",
-        version=" ".join(["sphinxlint", __version__]),
-        help="print version",
+        "-V", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     parser.add_argument("paths", default=".", nargs="*")
