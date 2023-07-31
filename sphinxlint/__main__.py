@@ -5,7 +5,7 @@ import os
 import sys
 from itertools import chain, starmap
 
-from sphinxlint import check_file
+from sphinxlint import check_file, __version__
 from sphinxlint.checkers import all_checkers
 from sphinxlint.sphinxlint import CheckersOptions
 
@@ -108,6 +108,12 @@ def parse_args(argv=None):
         action=StoreSortFieldAction,
         help="comma-separated list of fields used to sort errors by. Available "
         f"fields are: {SortField.as_supported_options()}",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=" ".join(["sphinxlint", __version__]),
+        help="print version",
     )
 
     parser.add_argument("paths", default=".", nargs="*")
