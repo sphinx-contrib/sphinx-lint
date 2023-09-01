@@ -1,6 +1,8 @@
 from collections import Counter
 from dataclasses import dataclass
 from os.path import splitext
+from pathlib import Path
+from typing import Optional
 
 from sphinxlint.utils import hide_non_rst_blocks, po2rst
 
@@ -49,13 +51,12 @@ def check_text(filename, text, checkers, options=None):
     return errors
 
 
-def check_file(filename, checkers, options: CheckersOptions = None):
+def check_file(filename, checkers, options: Optional[CheckersOptions] = None):
     ext = splitext(filename)[1]
     if not any(ext in checker.suffixes for checker in checkers):
         return Counter()
     try:
-        with open(filename, encoding="utf-8") as f:
-            text = f.read()
+        text = Path(filename).read_text(encoding="UTF-8")
         if filename.endswith(".po"):
             text = po2rst(text)
     except OSError as err:

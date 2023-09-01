@@ -3,13 +3,12 @@
 This is useful to avoid a sphinx-lint release to break many CIs.
 """
 
-from pathlib import Path
 import shlex
+from pathlib import Path
 
 import pytest
 
 from sphinxlint.__main__ import main
-
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 

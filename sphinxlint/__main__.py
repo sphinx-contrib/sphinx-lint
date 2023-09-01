@@ -54,7 +54,8 @@ def parse_args(argv=None):
                     sort_fields.append(SortField[field_name.upper()])
                 except KeyError:
                     raise ValueError(
-                        f"Unsupported sort field: {field_name}, supported values are {SortField.as_supported_options()}"
+                        f"Unsupported sort field: {field_name}, "
+                        f"supported values are {SortField.as_supported_options()}"
                     ) from None
             setattr(namespace, self.dest, sort_fields)
 
@@ -155,8 +156,8 @@ def _check_file(todo):
 def sort_errors(results, sorted_by):
     """Flattens and potentially sorts errors based on user prefernces"""
     if not sorted_by:
-        for results in results:
-            yield from results
+        for result in results:
+            yield from result
         return
     errors = list(error for errors in results for error in errors)
     # sorting is stable in python, so we can sort in reverse order to get the

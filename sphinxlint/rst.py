@@ -277,3 +277,19 @@ TRIPLE_BACKTICKS_RE = re.compile(
 )
 
 ROLE_MISSING_CLOSING_BACKTICK_RE = re.compile(rf"({ROLE_HEAD}`[^`]+?)[^`]*$")
+
+
+TABLE_HEAD_RE = re.compile(r"^\+[+=-]+\+")
+
+
+def line_looks_like_a_table(line):
+    """Return true if the given line looks part of an rst table."""
+    line = line.strip()
+    if TABLE_HEAD_RE.match(line):
+        return True
+    return line.startswith("|") and line.endswith("|")
+
+
+def paragraph_looks_like_a_table(paragraph):
+    """Return true if the given paragraph looks like an rst table."""
+    return all(line_looks_like_a_table(line) for line in paragraph.splitlines())
