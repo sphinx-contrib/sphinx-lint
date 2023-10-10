@@ -121,17 +121,21 @@ def looks_like_glued(match):
     return True
 
 
+_START_OF_COMMENT_BLOCK_PATTERN = re.compile(r"^\s*\.\.$")
+_PRODUCTION_LIST_DIRECTIVE_PATTERN = re.compile(r"^ *.. productionlist::")
+_COMMENT_PATTERN = re.compile(r"^ *\.\. ")
+
 def is_multiline_non_rst_block(line):
     """Returns True if the next lines are an indented literal block."""
-    if re.match(r"^\s*\.\.$", line):  # it's the start of a comment block.
+    if _START_OF_COMMENT_BLOCK_PATTERN.search(line):
         return True
     if rst.DIRECTIVES_CONTAINING_RST_RE.match(line):
         return False
     if rst.DIRECTIVES_CONTAINING_ARBITRARY_CONTENT_RE.match(line):
         return True
-    if re.match(r"^ *.. productionlist::", line):
+    if _PRODUCTION_LIST_DIRECTIVE_PATTERN.search(line):
         return True
-    if re.match(r"^ *\.\. ", line) and type_of_explicit_markup(line) == "comment":
+    if _COMMENT_PATTERN.search(line) and type_of_explicit_markup(line) == "comment":
         return True
     if line.endswith("::\n"):  # It's a literal block
         return True
