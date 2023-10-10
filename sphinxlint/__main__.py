@@ -58,6 +58,14 @@ def parse_args(argv=None):
                     ) from None
             setattr(namespace, self.dest, sort_fields)
 
+    class StoreNumJobsAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            setattr(namespace, self.dest, StoreNumJobsAction._job_count(values))
+        def _job_count(values):
+            if values == "auto":
+                return os.cpu_count()
+            return max(int(values), 1)
+
     parser.add_argument(
         "-v",
         "--verbose",
@@ -108,6 +116,16 @@ def parse_args(argv=None):
         action=StoreSortFieldAction,
         help="comma-separated list of fields used to sort errors by. Available "
         f"fields are: {SortField.as_supported_options()}",
+    )
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        metavar="N",
+        action=StoreNumJobsAction,
+        help="Run in parallle with N processes, defaults to \"auto\". "
+        "Special value \"auto\" will set N to cpu-count. "
+        "Values <= 1 are all considered 1.",
+        default=StoreNumJobsAction._job_count("auto")
     )
     parser.add_argument(
         "-V", "--version", action="version", version=f"%(prog)s {__version__}"
@@ -209,10 +227,10 @@ def main(argv=None):
         for path in chain.from_iterable(walk(path, args.ignore) for path in args.paths)
     ]
 
-    if len(todo) < 8:
+    if args.jobs == 1 or len(todo) < 8:
         count = print_errors(sort_errors(starmap(check_file, todo), args.sort_by))
     else:
-        with multiprocessing.Pool() as pool:
+        with multiprocessing.Pool(processes=args.jobs) as pool:
             count = print_errors(
                 sort_errors(pool.imap_unordered(_check_file, todo), args.sort_by)
             )
