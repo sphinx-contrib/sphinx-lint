@@ -124,7 +124,7 @@ def parse_args(argv=None):
         "--jobs",
         metavar="N",
         action=StoreNumJobsAction,
-        help="Run in parallle with N processes, defaults to 'auto', "
+        help="Run in parallel with N processes. Defaults to 'auto', "
         "which sets N to the number of logical CPUs."
         "Values <= 1 are all considered 1.",
         default=StoreNumJobsAction.job_count("auto")
