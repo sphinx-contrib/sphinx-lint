@@ -79,10 +79,12 @@ def escape2null(text):
         start = found + 2  # skip character after escape
 
 
+@lru_cache()
 def paragraphs(lines):
     """Yield (paragraph_line_no, paragraph_text) pairs describing
     paragraphs of the given lines.
     """
+    output = []
     paragraph = []
     paragraph_lno = 1
     for lno, line in enumerate(lines, start=1):
@@ -92,10 +94,11 @@ def paragraphs(lines):
                 paragraph_lno = lno
             paragraph.append(line)
         elif paragraph:
-            yield paragraph_lno, "".join(paragraph)
+            output.append((paragraph_lno, "".join(paragraph)))
             paragraph = []
     if paragraph:
-        yield paragraph_lno, "".join(paragraph)
+        output.append((paragraph_lno, "".join(paragraph)))
+    return tuple(output)
 
 
 def looks_like_glued(match):
