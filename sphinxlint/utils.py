@@ -1,4 +1,6 @@
 """Just a bunch of utility functions for sphinxlint."""
+from functools import lru_cache
+
 import regex as re
 from polib import pofile
 
@@ -27,6 +29,7 @@ def _clean_heuristic(paragraph, regex):
         paragraph = paragraph[: candidate.start()] + paragraph[candidate.end() :]
 
 
+@lru_cache()
 def clean_paragraph(paragraph):
     """Removes all good constructs, so detectors can focus on bad ones.
 
@@ -42,6 +45,7 @@ def clean_paragraph(paragraph):
     return paragraph.replace("\x00", "\\")
 
 
+@lru_cache()
 def escape2null(text):
     r"""Return a string with escape-backslashes converted to nulls.
 
@@ -174,6 +178,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
     return output
 
 
+@lru_cache()
 def type_of_explicit_markup(line):
     """Tell apart various explicit markup blocks."""
     line = line.lstrip()
