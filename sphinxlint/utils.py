@@ -125,6 +125,7 @@ _START_OF_COMMENT_BLOCK_PATTERN = re.compile(r"^\s*\.\.$")
 _PRODUCTION_LIST_DIRECTIVE_PATTERN = re.compile(r"^ *.. productionlist::")
 _COMMENT_PATTERN = re.compile(r"^ *\.\. ")
 
+
 def is_multiline_non_rst_block(line):
     """Returns True if the next lines are an indented literal block."""
     if _START_OF_COMMENT_BLOCK_PATTERN.search(line):
@@ -168,7 +169,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
             block_line_start = lineno
             assert not excluded_lines
             if (
-                re.match(r" *\.\. ", line)
+                _COMMENT_PATTERN.search(line)
                 and type_of_explicit_markup(line) == "comment"
             ):
                 line = "\n"
