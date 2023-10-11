@@ -127,7 +127,7 @@ def parse_args(argv=None):
         help="Run in parallle with N processes, defaults to 'auto', "
         "which sets N to the number of logical CPUs."
         "Values <= 1 are all considered 1.",
-        default=StoreNumJobsAction._job_count("auto")
+        default=StoreNumJobsAction.job_count("auto")
     )
     parser.add_argument(
         "-V", "--version", action="version", version=f"%(prog)s {__version__}"
