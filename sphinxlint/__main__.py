@@ -63,7 +63,7 @@ def parse_args(argv=None):
             setattr(namespace, self.dest, self._job_count(values))
 
         @staticmethod
-        def _job_count(values):
+        def job_count(values):
             if values == "auto":
                 return os.cpu_count()
             return max(int(values), 1)
