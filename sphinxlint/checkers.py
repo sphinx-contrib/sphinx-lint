@@ -157,6 +157,21 @@ def check_directive_missing_colons(file, lines, options=None):
             yield lno, "comment seems to be intended as a directive"
 
 
+# The difficulty here is that the following is valid:
+#    The :literal:`:exc:`Exceptions``
+# While this is not:
+#    The :literal:`:exc:`Exceptions``s
+_ROLE_BODY = rf"([^`]|\s`+|\\`|:{rst.SIMPLENAME}:`([^`]|\s`+|\\`)+`)+"
+_ALLOWED_AFTER_ROLE = (
+    rst.ASCII_ALLOWED_AFTER_INLINE_MARKUP
+    + rst.UNICODE_ALLOWED_AFTER_INLINE_MARKUP
+    + r"|\s"
+)
+_SUSPICIOUS_ROLE = re.compile(
+    f":{rst.SIMPLENAME}:`{_ROLE_BODY}`[^{_ALLOWED_AFTER_ROLE}]"
+)
+
+
 @checker(".rst", ".po")
 def check_missing_space_after_role(file, lines, options=None):
     r"""Search for roles immediately followed by a character.
@@ -164,23 +179,9 @@ def check_missing_space_after_role(file, lines, options=None):
     Bad:  :exc:`Exception`s.
     Good: :exc:`Exceptions`\ s
     """
-    # The difficulty here is that the following is valid:
-    #    The :literal:`:exc:`Exceptions``
-    # While this is not:
-    #    The :literal:`:exc:`Exceptions``s
-    role_body = rf"([^`]|\s`+|\\`|:{rst.SIMPLENAME}:`([^`]|\s`+|\\`)+`)+"
-    allowed_after_role = (
-        rst.ASCII_ALLOWED_AFTER_INLINE_MARKUP
-        + rst.UNICODE_ALLOWED_AFTER_INLINE_MARKUP
-        + r"|\s"
-    )
-
-    suspicious_role = re.compile(
-        f":{rst.SIMPLENAME}:`{role_body}`[^{allowed_after_role}]"
-    )
     for lno, line in enumerate(lines, start=1):
         line = clean_paragraph(line)
-        role = suspicious_role.search(line)
+        role = _SUSPICIOUS_ROLE.search(line)
         if role:
             yield lno, f"role missing (escaped) space after role: {role.group(0)!r}"
 
