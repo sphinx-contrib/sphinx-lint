@@ -36,7 +36,7 @@ def check_text(filename, text, checkers, options=None):
     errors = []
     ext = splitext(filename)[1]
     checkers = {checker for checker in checkers if ext in checker.suffixes}
-    lines = text.splitlines(keepends=True)
+    lines = tuple(text.splitlines(keepends=True))
     if any(checker.rst_only for checker in checkers):
         lines_with_rst_only = hide_non_rst_blocks(lines)
     for check in checkers:

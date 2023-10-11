@@ -70,7 +70,7 @@ def test_sphinxlint_shall_not_pass(file, expected_errors, capsys):
 @pytest.mark.parametrize("file", [str(FIXTURE_DIR / "paragraphs.rst")])
 def test_paragraphs(file):
     with open(file) as f:
-        lines = f.readlines()
+        lines = tuple(f.readlines())
     actual = paragraphs(lines)
     for lno, para in actual:
         firstpline = para.splitlines(keepends=True)[0]
