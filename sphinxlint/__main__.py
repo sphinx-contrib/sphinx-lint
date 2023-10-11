@@ -60,7 +60,7 @@ def parse_args(argv=None):
 
     class StoreNumJobsAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            setattr(namespace, self.dest, StoreNumJobsAction._job_count(values))
+            setattr(namespace, self.dest, self._job_count(values))
         def _job_count(values):
             if values == "auto":
                 return os.cpu_count()
