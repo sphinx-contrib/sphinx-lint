@@ -10,7 +10,7 @@ from sphinxlint import rst
 PER_FILE_CACHES = []
 
 
-def _per_file_cache(func):
+def per_file_cache(func):
     memoized_func = lru_cache(maxsize=None)(func)
     PER_FILE_CACHES.append(memoized_func)
     return memoized_func
@@ -38,7 +38,7 @@ def _clean_heuristic(paragraph, regex):
         paragraph = paragraph[: candidate.start()] + paragraph[candidate.end() :]
 
 
-@_per_file_cache
+@per_file_cache
 def clean_paragraph(paragraph):
     """Removes all good constructs, so detectors can focus on bad ones.
 
@@ -54,7 +54,7 @@ def clean_paragraph(paragraph):
     return paragraph.replace("\x00", "\\")
 
 
-@_per_file_cache
+@per_file_cache
 def escape2null(text):
     r"""Return a string with escape-backslashes converted to nulls.
 
@@ -88,7 +88,7 @@ def escape2null(text):
         start = found + 2  # skip character after escape
 
 
-@_per_file_cache
+@per_file_cache
 def paragraphs(lines):
     """Yield (paragraph_line_no, paragraph_text) pairs describing
     paragraphs of the given lines.
@@ -216,7 +216,7 @@ _starts_with_target = re.compile(r"\.\. _.*[^_]: ").match
 _starts_with_substitution_definition = re.compile(r"\.\. \|[^\|]*\| ").match
 
 
-@_per_file_cache
+@per_file_cache
 def type_of_explicit_markup(line):
     """Tell apart various explicit markup blocks."""
     line = line.lstrip()
