@@ -144,8 +144,6 @@ CLOSING_DELIMITERS = "\\\\.,;!?"
 
 BEFORE_ROLE = r"(^|(?<=[\s(/'{\[*-]))"
 ROLE_TAG = rf":{SIMPLENAME}:"
-ROLE_TAG_ENDING_LINE_RE = re.compile(ROLE_TAG + "$")
-ROLE_TAG_STARTING_LINE_RE = re.compile("^" + ROLE_TAG)
 ROLE_HEAD = rf"({BEFORE_ROLE}:{SIMPLENAME}:)"  # A role, with a clean start
 
 ASCII_ALLOWED_BEFORE_INLINE_MARKUP = r"""-:/'"<(\[{"""

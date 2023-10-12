@@ -109,6 +109,10 @@ def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
             )
 
 
+_ends_with_role_tag = re.compile(rst.ROLE_TAG + "$").search
+_starts_with_role_tag = re.compile("^" + rst.ROLE_TAG).search
+
+
 @checker(".rst", ".po", enabled=False)
 def check_default_role(file, lines, options=None):
     """Search for default roles (but they are allowed in many projects).
@@ -127,10 +131,10 @@ def check_default_role(file, lines, options=None):
             if (stripped_line.startswith("|") and stripped_line.endswith("|") and
                 stripped_line.count("|") >= 4 and "|" in match.group(0)):
                 return  # we don't handle tables yet.
-            if rst.ROLE_TAG_ENDING_LINE_RE.search(before_match):
+            if _ends_with_role_tag(before_match):
                 # It's not a default role: it ends with a tag.
                 continue
-            if rst.ROLE_TAG_STARTING_LINE_RE.search(after_match):
+            if _starts_with_role_tag(after_match):
                 # It's not a default role: it starts with a tag.
                 continue
             if match.group(0).startswith("``") and match.group(0).endswith("``"):
@@ -280,7 +284,7 @@ def check_role_with_double_backticks(file, lines, options=None):
             if inline_literal is None:
                 break
             before = paragraph[: inline_literal.start()]
-            if rst.ROLE_TAG_ENDING_LINE_RE.search(before):
+            if _ends_with_role_tag(before):
                 error_offset = paragraph[: inline_literal.start()].count("\n")
                 yield paragraph_lno + error_offset, "role use a single backtick, double backtick found."
             paragraph = (
