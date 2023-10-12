@@ -127,11 +127,11 @@ def check_default_role(file, lines, options=None):
             if (stripped_line.startswith("|") and stripped_line.endswith("|") and
                 stripped_line.count("|") >= 4 and "|" in match.group(0)):
                 return  # we don't handle tables yet.
-            if rst.ROLE_TAG_STARTING_LINE_RE.search(before_match):
-                # It's not a default role: it starts with a tag.
-                continue
-            if rst.ROLE_TAG_ENDING_LINE_RE.search(after_match):
+            if rst.ROLE_TAG_ENDING_LINE_RE.search(before_match):
                 # It's not a default role: it ends with a tag.
+                continue
+            if rst.ROLE_TAG_STARTING_LINE_RE.search(after_match):
+                # It's not a default role: it starts with a tag.
                 continue
             if match.group(0).startswith("``") and match.group(0).endswith("``"):
                 # It's not a default role: it's an inline literal.
@@ -453,7 +453,7 @@ def check_triple_backticks(file, lines, options=None):
             yield lno + 1, "There's no rst syntax using triple backticks"
 
 
-_BAD_DEDENT_RE = re.compile(" [^ ].*::$")
+_contains_bad_dedent = re.compile(" [^ ].*::$").match
 
 
 @checker(".rst", ".po", rst_only=False)
@@ -473,19 +473,20 @@ def check_bad_dedent(file, lines, options=None):
 
     def check_block(block_lineno, block):
         for lineno, line in enumerate(block.splitlines()):
-            if _BAD_DEDENT_RE.match(line):
+            if _contains_bad_dedent(line):
                 errors.append((block_lineno + lineno, "Bad dedent in block"))
 
     list(hide_non_rst_blocks(lines, hidden_block_cb=check_block))
     yield from errors
 
 
-_DANGLING_HYPHEN_RE = re.compile(r".*[a-z]-$")
+_contains_dangling_hyphen = re.compile(r".*[a-z]-$").match
+
 
 @checker(".rst", rst_only=True)
 def check_dangling_hyphen(file, lines, options):
     """Check for lines ending in a hyphen."""
     for lno, line in enumerate(lines):
         stripped_line = line.rstrip("\n")
-        if _DANGLING_HYPHEN_RE.match(stripped_line):
+        if _contains_dangling_hyphen(stripped_line):
             yield lno + 1, f"Line ends with dangling hyphen"
