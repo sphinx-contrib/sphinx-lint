@@ -200,26 +200,26 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
     return output
 
 
-_contains_directive = re.compile(rf"\.\. {rst.ALL_DIRECTIVES}::").match
-_contains_footnote = re.compile(r"\.\. \[[0-9]+\] ").match
-_contains_citation = re.compile(r"\.\. \[[^\]]+\] ").match
-_contains_target = re.compile(r"\.\. _.*[^_]: ").match
-_contains_substitution = re.compile(r"\.\. \|[^\|]*\| ").match
+_starts_with_directive_marker = re.compile(rf"\.\. {rst.ALL_DIRECTIVES}::").match
+_starts_with_footnote_marker = re.compile(r"\.\. \[[0-9]+\] ").match
+_starts_with_citation_marker = re.compile(r"\.\. \[[^\]]+\] ").match
+_starts_with_target = re.compile(r"\.\. _.*[^_]: ").match
+_starts_with_substitution_definition = re.compile(r"\.\. \|[^\|]*\| ").match
 
 
 @lru_cache()
 def type_of_explicit_markup(line):
     """Tell apart various explicit markup blocks."""
     line = line.lstrip()
-    if _contains_directive(line):
+    if _starts_with_directive_marker(line):
         return "directive"
-    if _contains_footnote(line):
+    if _starts_with_footnote_marker(line):
         return "footnote"
-    if _contains_citation(line):
+    if _starts_with_citation_marker(line):
         return "citation"
-    if _contains_target(line):
+    if _starts_with_target(line):
         return "target"
-    if _contains_substitution(line):
+    if _starts_with_substitution_definition(line):
         return "substitution_definition"
     return "comment"
 

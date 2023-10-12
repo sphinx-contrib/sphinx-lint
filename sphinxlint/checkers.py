@@ -64,6 +64,7 @@ def check_missing_backtick_after_role(file, lines, options=None):
 
 
 _RST_ROLE_RE = re.compile("``.+?``(?!`).", flags=re.DOTALL)
+_END_STRING_SUFFIX_RE = re.compile(rst.END_STRING_SUFFIX)
 
 
 @checker(".rst", ".po")
@@ -78,7 +79,7 @@ def check_missing_space_after_literal(file, lines, options=None):
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         for role in _RST_ROLE_RE.finditer(paragraph):
-            if not rst.END_STRING_SUFFIX_RE.match(role[0][-1]):
+            if not _END_STRING_SUFFIX_RE.match(role[0][-1]):
                 error_offset = paragraph[: role.start()].count("\n")
                 yield (
                     paragraph_lno + error_offset,
@@ -405,8 +406,8 @@ def check_missing_final_newline(file, lines, options=None):
 
 
 _is_long_interpreted_text = re.compile(r"^\s*\W*(:(\w+:)+)?`.*`\W*$").match
-_is_directive_or_hyperlink = re.compile(r"^\s*\.\. ").match
-_is_anonymous_hyperlink = re.compile(r"^\s*__ ").match
+_starts_with_directive_or_hyperlink = re.compile(r"^\s*\.\. ").match
+_starts_with_anonymous_hyperlink = re.compile(r"^\s*__ ").match
 _is_very_long_string_literal = re.compile(r"^\s*``[^`]+``$").match
 
 
@@ -420,9 +421,9 @@ def check_line_too_long(file, lines, options=None):
                 continue  # ignore wide tables
             if _is_long_interpreted_text(line):
                 continue  # ignore long interpreted text
-            if _is_directive_or_hyperlink(line):
+            if _starts_with_directive_or_hyperlink(line):
                 continue  # ignore directives and hyperlink targets
-            if _is_anonymous_hyperlink(line):
+            if _starts_with_anonymous_hyperlink(line):
                 continue  # ignore anonymous hyperlink targets
             if _is_very_long_string_literal(line):
                 continue  # ignore a very long literal string
@@ -457,7 +458,7 @@ def check_triple_backticks(file, lines, options=None):
             yield lno + 1, "There's no rst syntax using triple backticks"
 
 
-_contains_bad_dedent = re.compile(" [^ ].*::$").match
+_has_bad_dedent = re.compile(" [^ ].*::$").match
 
 
 @checker(".rst", ".po", rst_only=False)
@@ -477,14 +478,14 @@ def check_bad_dedent(file, lines, options=None):
 
     def check_block(block_lineno, block):
         for lineno, line in enumerate(block.splitlines()):
-            if _contains_bad_dedent(line):
+            if _has_bad_dedent(line):
                 errors.append((block_lineno + lineno, "Bad dedent in block"))
 
     list(hide_non_rst_blocks(lines, hidden_block_cb=check_block))
     yield from errors
 
 
-_contains_dangling_hyphen = re.compile(r".*[a-z]-$").match
+_has_dangling_hyphen = re.compile(r".*[a-z]-$").match
 
 
 @checker(".rst", rst_only=True)
@@ -492,5 +493,5 @@ def check_dangling_hyphen(file, lines, options):
     """Check for lines ending in a hyphen."""
     for lno, line in enumerate(lines):
         stripped_line = line.rstrip("\n")
-        if _contains_dangling_hyphen(stripped_line):
+        if _has_dangling_hyphen(stripped_line):
             yield lno + 1, f"Line ends with dangling hyphen"

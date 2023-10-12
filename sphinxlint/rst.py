@@ -250,7 +250,6 @@ DOUBLE_BACKTICK_ROLE_RE = re.compile(rf"(?<!``){ROLE_HEAD}``")
 
 START_STRING_PREFIX = f"(^|(?<=\\s|[{OPENERS}{DELIMITERS}|]))"
 END_STRING_SUFFIX = f"($|(?=\\s|[\x00{CLOSING_DELIMITERS}{DELIMITERS}{CLOSERS}|]))"
-END_STRING_SUFFIX_RE = re.compile(END_STRING_SUFFIX)
 
 # Find role glued with another word like:
 #     the:c:func:`PyThreadState_LeaveTracing` function.
