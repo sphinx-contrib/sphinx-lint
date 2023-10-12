@@ -2,7 +2,7 @@ from collections import Counter
 from dataclasses import dataclass
 from os.path import splitext
 
-from sphinxlint.utils import hide_non_rst_blocks, po2rst
+from sphinxlint.utils import PER_FILE_CACHES, hide_non_rst_blocks, po2rst
 
 
 @dataclass(frozen=True)
@@ -50,16 +50,20 @@ def check_text(filename, text, checkers, options=None):
 
 
 def check_file(filename, checkers, options: CheckersOptions = None):
-    ext = splitext(filename)[1]
-    if not any(ext in checker.suffixes for checker in checkers):
-        return Counter()
     try:
-        with open(filename, encoding="utf-8") as f:
-            text = f.read()
-        if filename.endswith(".po"):
-            text = po2rst(text)
-    except OSError as err:
-        return [f"{filename}: cannot open: {err}"]
-    except UnicodeDecodeError as err:
-        return [f"{filename}: cannot decode as UTF-8: {err}"]
-    return check_text(filename, text, checkers, options)
+        ext = splitext(filename)[1]
+        if not any(ext in checker.suffixes for checker in checkers):
+            return Counter()
+        try:
+            with open(filename, encoding="utf-8") as f:
+                text = f.read()
+            if filename.endswith(".po"):
+                text = po2rst(text)
+        except OSError as err:
+            return [f"{filename}: cannot open: {err}"]
+        except UnicodeDecodeError as err:
+            return [f"{filename}: cannot decode as UTF-8: {err}"]
+        return check_text(filename, text, checkers, options)
+    finally:
+        for memoized_function in PER_FILE_CACHES:
+            memoized_function.cache_clear()
