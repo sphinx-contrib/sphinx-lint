@@ -159,7 +159,6 @@ def is_multiline_non_rst_block(line):
     return False
 
 
-_NON_RST_BLOCKS_CACHE = {}
 _ZERO_OR_MORE_SPACES_RE = re.compile(" *")
 
 
@@ -168,14 +167,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
 
     The filter actually replace "removed" lines by empty lines, so the
     line numbering still make sense.
-
-    This function is quite hot, so we cache the returned value where possible.
-    The function is only "pure" when hidden_block_cb is None, however,
-    so we can only safely cache the output when hidden_block_cb=None.
     """
-    lines = tuple(lines)
-    if hidden_block_cb is None and lines in _NON_RST_BLOCKS_CACHE:
-        return _NON_RST_BLOCKS_CACHE[lines]
     in_literal = None
     excluded_lines = []
     block_line_start = None
@@ -203,10 +195,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
         output.append(line)
     if excluded_lines and hidden_block_cb:
         hidden_block_cb(block_line_start, "".join(excluded_lines))
-    output = tuple(output)
-    if hidden_block_cb is None:
-        _NON_RST_BLOCKS_CACHE[lines] = output
-    return output
+    return tuple(output)
 
 
 _starts_with_directive_marker = re.compile(rf"\.\. {rst.ALL_DIRECTIVES}::").match
