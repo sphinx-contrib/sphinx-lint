@@ -144,6 +144,8 @@ CLOSING_DELIMITERS = "\\\\.,;!?"
 
 BEFORE_ROLE = r"(^|(?<=[\s(/'{\[*-]))"
 ROLE_TAG = rf":{SIMPLENAME}:"
+ROLE_TAG_ENDING_LINE_RE = re.compile(ROLE_TAG + "$")
+ROLE_TAG_STARTING_LINE_RE = re.compile("^" + ROLE_TAG)
 ROLE_HEAD = rf"({BEFORE_ROLE}:{SIMPLENAME}:)"  # A role, with a clean start
 
 ASCII_ALLOWED_BEFORE_INLINE_MARKUP = r"""-:/'"<(\[{"""
@@ -250,6 +252,7 @@ DOUBLE_BACKTICK_ROLE_RE = re.compile(rf"(?<!``){ROLE_HEAD}``")
 
 START_STRING_PREFIX = f"(^|(?<=\\s|[{OPENERS}{DELIMITERS}|]))"
 END_STRING_SUFFIX = f"($|(?=\\s|[\x00{CLOSING_DELIMITERS}{DELIMITERS}{CLOSERS}|]))"
+END_STRING_SUFFIX_RE = re.compile(END_STRING_SUFFIX)
 
 # Find role glued with another word like:
 #     the:c:func:`PyThreadState_LeaveTracing` function.

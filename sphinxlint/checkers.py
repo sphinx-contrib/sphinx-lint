@@ -63,6 +63,9 @@ def check_missing_backtick_after_role(file, lines, options=None):
             yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
 
 
+_RST_ROLE_RE = re.compile("``.+?``(?!`).", flags=re.DOTALL)
+
+
 @checker(".rst", ".po")
 def check_missing_space_after_literal(file, lines, options=None):
     r"""Search for inline literals immediately followed by a character.
@@ -74,14 +77,17 @@ def check_missing_space_after_literal(file, lines, options=None):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
-        for role in re.finditer("``.+?``(?!`).", paragraph, flags=re.DOTALL):
-            if not re.match(rst.END_STRING_SUFFIX, role.group(0)[-1]):
+        for role in _RST_ROLE_RE.finditer(paragraph):
+            if not rst.END_STRING_SUFFIX_RE.match(role[0][-1]):
                 error_offset = paragraph[: role.start()].count("\n")
                 yield (
                     paragraph_lno + error_offset,
                     "inline literal missing "
                     f"(escaped) space after literal: {role.group(0)!r}",
                 )
+
+
+_LONE_DOUBLEBACKTICK_RE = re.compile("(?<!`)``(?!`)")
 
 
 @checker(".rst", ".po")
@@ -95,7 +101,7 @@ def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
-        for lone_double_backtick in re.finditer("(?<!`)``(?!`)", paragraph):
+        for lone_double_backtick in _LONE_DOUBLEBACKTICK_RE.finditer(paragraph):
             error_offset = paragraph[: lone_double_backtick.start()].count("\n")
             yield (
                 paragraph_lno + error_offset,
@@ -121,10 +127,10 @@ def check_default_role(file, lines, options=None):
             if (stripped_line.startswith("|") and stripped_line.endswith("|") and
                 stripped_line.count("|") >= 4 and "|" in match.group(0)):
                 return  # we don't handle tables yet.
-            if re.search(rst.ROLE_TAG + "$", before_match):
+            if rst.ROLE_TAG_STARTING_LINE_RE.search(before_match):
                 # It's not a default role: it starts with a tag.
                 continue
-            if re.search("^" + rst.ROLE_TAG, after_match):
+            if rst.ROLE_TAG_ENDING_LINE_RE.search(after_match):
                 # It's not a default role: it ends with a tag.
                 continue
             if match.group(0).startswith("``") and match.group(0).endswith("``"):
@@ -274,7 +280,7 @@ def check_role_with_double_backticks(file, lines, options=None):
             if inline_literal is None:
                 break
             before = paragraph[: inline_literal.start()]
-            if re.search(rst.ROLE_TAG + "$", before):
+            if rst.ROLE_TAG_ENDING_LINE_RE.search(before):
                 error_offset = paragraph[: inline_literal.start()].count("\n")
                 yield paragraph_lno + error_offset, "role use a single backtick, double backtick found."
             paragraph = (
@@ -325,6 +331,9 @@ def check_missing_space_before_default_role(file, lines, options=None):
             )
 
 
+_HYPERLINK_REFERENCE_RE = re.compile(r"\S* <https?://[^ ]+>`_")
+
+
 @checker(".rst", ".po")
 def check_hyperlink_reference_missing_backtick(file, lines, options=None):
     """Search for missing backticks in front of hyperlink references.
@@ -337,7 +346,7 @@ def check_hyperlink_reference_missing_backtick(file, lines, options=None):
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         paragraph = rst.INTERPRETED_TEXT_RE.sub("", paragraph)
-        for hyperlink_reference in re.finditer(r"\S* <https?://[^ ]+>`_", paragraph):
+        for hyperlink_reference in _HYPERLINK_REFERENCE_RE.finditer(paragraph):
             error_offset = paragraph[: hyperlink_reference.start()].count("\n")
             context = hyperlink_reference.group(0)
             yield (
@@ -391,6 +400,12 @@ def check_missing_final_newline(file, lines, options=None):
         yield len(lines), "No newline at end of file."
 
 
+_is_long_interpreted_text = re.compile(r"^\s*\W*(:(\w+:)+)?`.*`\W*$").match
+_is_directive_or_hyperlink = re.compile(r"^\s*\.\. ").match
+_is_anonymous_hyperlink = re.compile(r"^\s*__ ").match
+_is_very_long_string_literal = re.compile(r"^\s*``[^`]+``$").match
+
+
 @checker(".rst", ".po", enabled=False, rst_only=True)
 def check_line_too_long(file, lines, options=None):
     """Check for line length; this checker is not run by default."""
@@ -399,13 +414,13 @@ def check_line_too_long(file, lines, options=None):
         if len(line) - 1 > options.max_line_length:
             if line.lstrip()[0] in "+|":
                 continue  # ignore wide tables
-            if re.match(r"^\s*\W*(:(\w+:)+)?`.*`\W*$", line):
+            if _is_long_interpreted_text(line):
                 continue  # ignore long interpreted text
-            if re.match(r"^\s*\.\. ", line):
+            if _is_directive_or_hyperlink(line):
                 continue  # ignore directives and hyperlink targets
-            if re.match(r"^\s*__ ", line):
+            if _is_anonymous_hyperlink(line):
                 continue  # ignore anonymous hyperlink targets
-            if re.match(r"^\s*``[^`]+``$", line):
+            if _is_very_long_string_literal(line):
                 continue  # ignore a very long literal string
             yield lno + 1, f"Line too long ({len(line)-1}/{options.max_line_length})"
 
@@ -438,6 +453,9 @@ def check_triple_backticks(file, lines, options=None):
             yield lno + 1, "There's no rst syntax using triple backticks"
 
 
+_BAD_DEDENT_RE = re.compile(" [^ ].*::$")
+
+
 @checker(".rst", ".po", rst_only=False)
 def check_bad_dedent(file, lines, options=None):
     """Check for mis-alignment in indentation in code blocks.
@@ -455,7 +473,7 @@ def check_bad_dedent(file, lines, options=None):
 
     def check_block(block_lineno, block):
         for lineno, line in enumerate(block.splitlines()):
-            if re.match(" [^ ].*::$", line):
+            if _BAD_DEDENT_RE.match(line):
                 errors.append((block_lineno + lineno, "Bad dedent in block"))
 
     list(hide_non_rst_blocks(lines, hidden_block_cb=check_block))

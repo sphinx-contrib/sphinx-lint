@@ -151,6 +151,7 @@ def is_multiline_non_rst_block(line):
 
 
 _NON_RST_BLOCKS_CACHE = {}
+_ZERO_OR_MORE_SPACES_RE = re.compile(" *")
 
 
 def hide_non_rst_blocks(lines, hidden_block_cb=None):
@@ -172,7 +173,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
     output = []
     for lineno, line in enumerate(lines, start=1):
         if in_literal is not None:
-            current_indentation = len(re.match(" *", line).group(0))
+            current_indentation = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
             if current_indentation > in_literal or line == "\n":
                 excluded_lines.append(line if line == "\n" else line[in_literal:])
                 line = "\n"  # Hiding line
@@ -182,12 +183,12 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
                     hidden_block_cb(block_line_start, "".join(excluded_lines))
                 excluded_lines = []
         if in_literal is None and is_multiline_non_rst_block(line):
-            in_literal = len(re.match(" *", line).group(0))
+            in_literal = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
             block_line_start = lineno
             assert not excluded_lines
             if (
-                _COMMENT_RE.search(line)
-                and type_of_explicit_markup(line) == "comment"
+                type_of_explicit_markup(line) == "comment"
+                and _COMMENT_RE.search(line)
             ):
                 line = "\n"
         output.append(line)
@@ -199,19 +200,26 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
     return output
 
 
+_is_directive = re.compile(rf"\.\. {rst.ALL_DIRECTIVES}::").match
+_is_footnote = re.compile(r"\.\. \[[0-9]+\] ").match
+_is_citation = re.compile(r"\.\. \[[^\]]+\] ").match
+_is_target = re.compile(r"\.\. _.*[^_]: ").match
+_is_substitution = re.compile(r"\.\. \|[^\|]*\| ").match
+
+
 @lru_cache()
 def type_of_explicit_markup(line):
     """Tell apart various explicit markup blocks."""
     line = line.lstrip()
-    if re.match(rf"\.\. {rst.ALL_DIRECTIVES}::", line):
+    if _is_directive(line):
         return "directive"
-    if re.match(r"\.\. \[[0-9]+\] ", line):
+    if _is_footnote(line):
         return "footnote"
-    if re.match(r"\.\. \[[^\]]+\] ", line):
+    if _is_citation(line):
         return "citation"
-    if re.match(r"\.\. _.*[^_]: ", line):
+    if _is_target(line):
         return "target"
-    if re.match(r"\.\. \|[^\|]*\| ", line):
+    if _is_substitution(line):
         return "substitution_definition"
     return "comment"
 
