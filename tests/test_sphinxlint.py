@@ -64,7 +64,7 @@ def test_sphinxlint_shall_not_pass(file, expected_errors, capsys):
         assert expected_error in out
     number_of_expected_errors = len(expected_errors)
     number_of_reported_errors = len(out.splitlines())
-    assert number_of_expected_errors == number_of_reported_errors
+    assert number_of_expected_errors == number_of_reported_errors, f"{number_of_reported_errors=}, {out=}"
 
 
 @pytest.mark.parametrize("file", [str(FIXTURE_DIR / "paragraphs.rst")])
