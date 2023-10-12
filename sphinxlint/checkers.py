@@ -88,7 +88,7 @@ def check_missing_space_after_literal(file, lines, options=None):
                 )
 
 
-_LONE_DOUBLEBACKTICK_RE = re.compile("(?<!`)``(?!`)")
+_LONE_DOUBLE_BACKTICK_RE = re.compile("(?<!`)``(?!`)")
 
 
 @checker(".rst", ".po")
@@ -102,7 +102,7 @@ def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
-        for lone_double_backtick in _LONE_DOUBLEBACKTICK_RE.finditer(paragraph):
+        for lone_double_backtick in _LONE_DOUBLE_BACKTICK_RE.finditer(paragraph):
             error_offset = paragraph[: lone_double_backtick.start()].count("\n")
             yield (
                 paragraph_lno + error_offset,
