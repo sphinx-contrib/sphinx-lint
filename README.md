@@ -25,13 +25,12 @@ CPython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
 
 To use Sphinx Lint, run:
 
-```console
-$ sphinx-lint           # check all dirs and files
-$ sphinx-lint file.rst  # check a single file
-$ sphinx-lint docs      # check a directory
-$ sphinx-lint -i venv   # ignore a file/directory
-$ sphinx-lint -h        # for more options
-```
+```sh
+sphinx-lint           # check all dirs and files
+sphinx-lint file.rst  # check a single file
+sphinx-lint docs      # check a directory
+sphinx-lint -i venv   # ignore a file/directory
+sphinx-lint -h        # for more options
 
 Sphinx Lint can also be used via [pre-commit](https://pre-commit.com).
 We recommend using a configuration like this:
