@@ -108,22 +108,21 @@ $ docutils --writer=pseudoxml tests/fixtures/xpass/role-in-code-sample.rst
 
 ## Releasing
 
-First test with friends projects by running:
-
-    sh download-more-tests.sh
-    python -m pytest
-
-Bump the version in `sphinxlint.py`, commit, tag, push:
-
-    git tag v0.6.5
-    git push
-    git push --tags
-
-To release on PyPI run:
-
-    python -m pip install --upgrade build twine
-    python -m build
-    python -m twine upload dist/*
+1. Make sure that the [CI tests pass](https://github.com/sphinx-contrib/sphinx-lint/actions)
+   and optionally double-check locally with "friends projects" by running:
+   
+       sh download-more-tests.sh
+       python -m pytest
+2. Go on the [Releases page](https://github.com/sphinx-contrib/sphinx-lint/releases)
+3. Click "Draft a new release"
+4. Click "Choose a tag"
+5. Type the next vX.Y.Z version and select "Create new tag: vX.Y.Z on publish"
+6. Leave the "Release title" blank (it will be autofilled)
+7. Click "Generate release notes" and amend as required
+8. Click "Publish release"
+9. Check the tagged
+   [GitHub Actions build](https://github.com/sphinx-contrib/sphinx-lint/actions/workflows/deploy.yml)
+   has [deployed to PyPI](https://pypi.org/project/sphinx-lint/#history)
 
 
 ## License
