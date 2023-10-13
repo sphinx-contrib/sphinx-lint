@@ -21,7 +21,7 @@ CPython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
 - focus on finding errors that are **not** visible to sphinx-build.
 
 
-## Using sphinx-lint
+## Using Sphinx Lint
 
 To use Sphinx Lint, run:
 
@@ -45,10 +45,10 @@ We recommend using a configuration like this:
         types: [rst]
 ```
 
-In particular, note that the `-j1` flag is recommended for use with pre-commit.
+In particular, note that the `--jobs=1` flag is recommended for use with pre-commit.
 By default, Sphinx Lint uses `multiprocessing` to lint multiple files simultaneously,
 but this interacts poorly with pre-commit, which also attempts to use multiprocessing,
-leading to resource contention. Adding the `-j1` flag tells Sphinx Lint not to use
+leading to resource contention. Adding `--jobs=1` tells Sphinx Lint not to use
 multiprocessing itself, deferring to pre-commit on the best way to delegate resources
 across available cores.
 
