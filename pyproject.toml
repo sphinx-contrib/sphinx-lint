@@ -31,7 +31,8 @@ dynamic = ["version"]
 
 
 [project.urls]
-repository = "https://github.com/sphinx-contrib/sphinx-lint"
+Repository = "https://github.com/sphinx-contrib/sphinx-lint"
+Changelog = "https://github.com/sphinx-contrib/sphinx-lint/releases"
 
 [project.scripts]
 sphinx-lint = "sphinxlint.__main__:main"
