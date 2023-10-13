@@ -485,6 +485,38 @@ def check_bad_dedent(file, lines, options=None):
     yield from errors
 
 
+_find_leading_spaces = re.compile(r'^\s*').match
+# finds lines that start with bullets, numbers, and directives' ".."
+_find_list_starters = re.compile(r'^\s*(?:[-+*•‣⁃]|\d+[).]|\(\d+\)|#\.|\.\.)\s+'
+                                 r'(?!index)').match
+
+
+@checker(".rst")
+def check_excessive_indentation(file, lines, options=None):
+    """Check for nested blocks indented more than they should.
+
+    |Unnecessarily indented list:
+    |
+    |   * this will be rendered in a blockquote
+    |
+    |   .. note: this too
+    """
+    errors = []
+    last_ind_level = 0
+    for lineno, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        curr_ind_level = len(_find_leading_spaces(line).group())
+        # look for nested lists/directives with excessive indentation
+        if curr_ind_level > last_ind_level and _find_list_starters(line):
+            errors.append((lineno, "Excessive indentation in nested section"))
+        # update the indentation level to ignore "* ", "1. ", ".. ", etc.
+        if m := _find_list_starters(line):
+            curr_ind_level = len(m.group())
+        last_ind_level = curr_ind_level
+    yield from errors
+
+
 _has_dangling_hyphen = re.compile(r".*[a-z]-$").match
 
 
