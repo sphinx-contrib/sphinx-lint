@@ -21,6 +21,34 @@ CPython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
 - focus on finding errors that are **not** visible to sphinx-build.
 
 
+## Using sphinx-lint
+
+To use sphinx-lint, simply run:
+
+```console
+$ sphinx-lint file_or_directory_1, file_or_directory_2, ...
+```
+
+Sphinx-lint can also be used via [pre-commit](https://pre-commit.com).
+We recommend using a configuration like this:
+
+```yaml
+  - repo: https://github.com/sphinx-contrib/sphinx-lint
+    rev: LATEST_SPHINXLINT_RELEASE_TAG
+    hooks:
+      - id: sphinx-lint
+        args: [-j1]
+        types: [rst]
+```
+
+In particular, note that the `-j1` flag is recommended for use with pre-commit.
+By default, sphinx-lint uses `multiprocessing` to lint multiple files simultaneously,
+but this interacts poorly with pre-commit, which also attempts to use multiprocessing,
+leading to resource contention. Adding the `-j1` flag tells sphinx-lint not to use
+multiprocessing itself, deferring to pre-commit on the best way to delegate resources
+across a given computer's available cores.
+
+
 ## Known issues
 
 Currently Sphinx Lint can't work with tables, there's no understanding
