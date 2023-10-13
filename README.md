@@ -23,13 +23,17 @@ CPython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
 
 ## Using sphinx-lint
 
-To use sphinx-lint, simply run:
+To use Sphinx Lint, run:
 
 ```console
-$ sphinx-lint file_or_directory_1, file_or_directory_2, ...
+$ sphinx-lint           # check all dirs and files
+$ sphinx-lint file.rst  # check a single file
+$ sphinx-lint docs      # check a directory
+$ sphinx-lint -i venv   # ignore a file/directory
+$ sphinx-lint -h        # for more options
 ```
 
-Sphinx-lint can also be used via [pre-commit](https://pre-commit.com).
+Sphinx Lint can also be used via [pre-commit](https://pre-commit.com).
 We recommend using a configuration like this:
 
 ```yaml
@@ -37,16 +41,16 @@ We recommend using a configuration like this:
     rev: LATEST_SPHINXLINT_RELEASE_TAG
     hooks:
       - id: sphinx-lint
-        args: [-j1]
+        args: [--jobs=1]
         types: [rst]
 ```
 
 In particular, note that the `-j1` flag is recommended for use with pre-commit.
-By default, sphinx-lint uses `multiprocessing` to lint multiple files simultaneously,
+By default, Sphinx Lint uses `multiprocessing` to lint multiple files simultaneously,
 but this interacts poorly with pre-commit, which also attempts to use multiprocessing,
-leading to resource contention. Adding the `-j1` flag tells sphinx-lint not to use
+leading to resource contention. Adding the `-j1` flag tells Sphinx Lint not to use
 multiprocessing itself, deferring to pre-commit on the best way to delegate resources
-across a given computer's available cores.
+across available cores.
 
 
 ## Known issues
