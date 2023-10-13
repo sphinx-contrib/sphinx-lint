@@ -7,6 +7,15 @@ from polib import pofile
 from sphinxlint import rst
 
 
+PER_FILE_CACHES = []
+
+
+def per_file_cache(func):
+    memoized_func = lru_cache(maxsize=None)(func)
+    PER_FILE_CACHES.append(memoized_func)
+    return memoized_func
+
+
 def match_size(re_match):
     return re_match.end() - re_match.start()
 
@@ -29,7 +38,7 @@ def _clean_heuristic(paragraph, regex):
         paragraph = paragraph[: candidate.start()] + paragraph[candidate.end() :]
 
 
-@lru_cache()
+@per_file_cache
 def clean_paragraph(paragraph):
     """Removes all good constructs, so detectors can focus on bad ones.
 
@@ -45,7 +54,7 @@ def clean_paragraph(paragraph):
     return paragraph.replace("\x00", "\\")
 
 
-@lru_cache()
+@per_file_cache
 def escape2null(text):
     r"""Return a string with escape-backslashes converted to nulls.
 
@@ -79,7 +88,7 @@ def escape2null(text):
         start = found + 2  # skip character after escape
 
 
-@lru_cache()
+@per_file_cache
 def paragraphs(lines):
     """Yield (paragraph_line_no, paragraph_text) pairs describing
     paragraphs of the given lines.
@@ -150,7 +159,6 @@ def is_multiline_non_rst_block(line):
     return False
 
 
-_NON_RST_BLOCKS_CACHE = {}
 _ZERO_OR_MORE_SPACES_RE = re.compile(" *")
 
 
@@ -159,14 +167,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
 
     The filter actually replace "removed" lines by empty lines, so the
     line numbering still make sense.
-
-    This function is quite hot, so we cache the returned value where possible.
-    The function is only "pure" when hidden_block_cb is None, however,
-    so we can only safely cache the output when hidden_block_cb=None.
     """
-    lines = tuple(lines)
-    if hidden_block_cb is None and lines in _NON_RST_BLOCKS_CACHE:
-        return _NON_RST_BLOCKS_CACHE[lines]
     in_literal = None
     excluded_lines = []
     block_line_start = None
@@ -194,10 +195,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
         output.append(line)
     if excluded_lines and hidden_block_cb:
         hidden_block_cb(block_line_start, "".join(excluded_lines))
-    output = tuple(output)
-    if hidden_block_cb is None:
-        _NON_RST_BLOCKS_CACHE[lines] = output
-    return output
+    return tuple(output)
 
 
 _starts_with_directive_marker = re.compile(rf"\.\. {rst.ALL_DIRECTIVES}::").match
@@ -207,7 +205,7 @@ _starts_with_target = re.compile(r"\.\. _.*[^_]: ").match
 _starts_with_substitution_definition = re.compile(r"\.\. \|[^\|]*\| ").match
 
 
-@lru_cache()
+@per_file_cache
 def type_of_explicit_markup(line):
     """Tell apart various explicit markup blocks."""
     line = line.lstrip()
