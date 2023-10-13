@@ -91,7 +91,7 @@ $ docutils --writer=pseudoxml tests/fixtures/xpass/role-in-code-sample.rst
 8. Click "Publish release"
 9. Check the tagged
    [GitHub Actions build](https://github.com/sphinx-contrib/sphinx-lint/actions/workflows/deploy.yml)
-   has [deployed to PyPI](https://pypi.org/project/sphinx-lint/0.7.0/#history)
+   has [deployed to PyPI](https://pypi.org/project/sphinx-lint/#history)
 
 
 ## License
