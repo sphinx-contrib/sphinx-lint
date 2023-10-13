@@ -503,7 +503,8 @@ def check_excessive_indentation(file, lines, options=None):
     """
     errors = []
     last_ind_level = 0
-    for lineno, line in enumerate(lines, start=1):
+    for lineno, line in enumerate(hide_non_rst_blocks(lines), start=1):
+        # print(line, end='')
         if not line.strip():
             continue
         curr_ind_level = len(_find_leading_spaces(line).group())

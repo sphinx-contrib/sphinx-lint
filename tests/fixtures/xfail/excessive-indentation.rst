@@ -8,7 +8,7 @@
 .. expect: 51: Excessive indentation in nested section (excessive-indentation)
 .. expect: 53: Excessive indentation in nested section (excessive-indentation)
 .. expect: 57: Excessive indentation in nested section (excessive-indentation)
-.. expect: 71: Excessive indentation in nested section (excessive-indentation)
+
 
 The most common mistakes is indenting lists and directives under a paragraph:
 
@@ -62,14 +62,3 @@ Each of these should give an error, since they are all indented wrong.
 Numbered lists that start with letters (a. b. c. ...)
 and roman numerals (I. II. III. ...) are only supported by Sphinx 7+
 so we just ignore them
-
-
-This is a known false positive:
-
-   >>> import sys
-   >>> sys.stdout.writelines(result)
-       1. Beautiful is better than ugly.
-   -   2. Explicit is better than implicit.
-   -   3. Simple is better than complex.
-   +   3.   Simple is better than complex.
-   ?     ++
