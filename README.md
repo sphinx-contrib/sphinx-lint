@@ -85,7 +85,7 @@ $ docutils --writer=pseudoxml tests/fixtures/xpass/role-in-code-sample.rst
 2. Go on the [Releases page](https://github.com/sphinx-contrib/sphinx-lint/releases)
 3. Click "Draft a new release"
 4. Click "Choose a tag"
-5. Type the next vX.Y.Z version "Create new tag: vX.Y.Z on publish"
+5. Type the next vX.Y.Z version and select "Create new tag: vX.Y.Z on publish"
 6. Leave the "Release title" blank (it will be autofilled)
 7. Click "Generate release notes" and amend as required
 8. Click "Publish release"
