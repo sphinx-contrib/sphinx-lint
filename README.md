@@ -31,6 +31,7 @@ sphinx-lint file.rst  # check a single file
 sphinx-lint docs      # check a directory
 sphinx-lint -i venv   # ignore a file/directory
 sphinx-lint -h        # for more options
+```
 
 Sphinx Lint can also be used via [pre-commit](https://pre-commit.com).
 We recommend using a configuration like this:
