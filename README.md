@@ -23,7 +23,7 @@ Sphinx Lint should:
 
 ## Using Sphinx Lint
 
-Here are some example invocationsn of Sphinx Lint from the command line:
+Here are some example invocations of Sphinx Lint from the command line:
 
 ```sh
 sphinx-lint           # check all dirs and files
