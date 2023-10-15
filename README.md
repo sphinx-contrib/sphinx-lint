@@ -12,7 +12,7 @@ CPython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
 
 ## What is Sphinx Lint, what is it not?
 
-`sphinx-lint` should:
+Sphinx Lint should:
 
 - be reasonably fast so it's comfortable to use as a linter in your editor.
 - be usable on a single file.
@@ -23,7 +23,7 @@ CPython](https://github.com/python/cpython/blob/e0433c1e7/Doc/tools/rstlint.py).
 
 ## Using Sphinx Lint
 
-To use Sphinx Lint, run:
+Here are some example invocationsn of Sphinx Lint from the command line:
 
 ```sh
 sphinx-lint           # check all dirs and files
@@ -41,16 +41,8 @@ We recommend using a configuration like this:
     rev: LATEST_SPHINXLINT_RELEASE_TAG
     hooks:
       - id: sphinx-lint
-        args: [--jobs=1]
         types: [rst]
 ```
-
-In particular, note that the `--jobs=1` flag is recommended for use with pre-commit.
-By default, Sphinx Lint uses `multiprocessing` to lint multiple files simultaneously,
-but this interacts poorly with pre-commit, which also attempts to use multiprocessing,
-leading to resource contention. Adding `--jobs=1` tells Sphinx Lint not to use
-multiprocessing itself, deferring to pre-commit on the best way to delegate resources
-across available cores.
 
 
 ## Known issues

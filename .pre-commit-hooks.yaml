@@ -1,7 +1,8 @@
 - id: sphinx-lint
-  name: Sphinx lint
+  name: Sphinx Lint
   description: 'Searches for common typos in sphinx-flavored rst files.'
   files: '\.rst$'
+  # Defer to pre-commit on the best way to delegate resources across available cores
+  args: [--jobs=1]
   entry: sphinx-lint
   language: python
-
