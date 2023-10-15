@@ -41,7 +41,6 @@ We recommend using a configuration like this:
     rev: LATEST_SPHINXLINT_RELEASE_TAG
     hooks:
       - id: sphinx-lint
-        types: [rst]
 ```
 
 
