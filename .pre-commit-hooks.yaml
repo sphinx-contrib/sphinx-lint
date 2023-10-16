@@ -2,7 +2,6 @@
   name: Sphinx Lint
   description: 'Searches for common problems in Sphinx-flavored reST files'
   types: [rst]
-  # Defer to pre-commit on the best way to delegate resources across available cores
-  args: [--jobs=1]
+  require_serial: true  # we use multiprocessing internally anyway
   entry: sphinx-lint
   language: python
