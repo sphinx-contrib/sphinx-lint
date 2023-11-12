@@ -1,7 +1,7 @@
 from random import choice
 import re
 
-from sphinxlint.__main__ import main
+from sphinxlint.cli import main
 
 CHECKER_LINE = re.compile(r"^\s*- ([^:]+):", flags=re.MULTILINE)
 
