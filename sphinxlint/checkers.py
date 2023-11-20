@@ -190,11 +190,12 @@ def check_missing_space_after_role(file, lines, options=None):
     Bad:  :exc:`Exception`s.
     Good: :exc:`Exceptions`\ s
     """
-    for lno, line in enumerate(lines, start=1):
-        line = clean_paragraph(line)
-        role = _SUSPICIOUS_ROLE.search(line)
+    for paragraph_lno, paragraph in paragraphs(lines):
+        paragraph = clean_paragraph(paragraph)
+        role = _SUSPICIOUS_ROLE.search(paragraph)
         if role:
-            yield lno, f"role missing (escaped) space after role: {role.group(0)!r}"
+            error_offset = paragraph[: role.start()].count("\n")
+            yield paragraph_lno + error_offset, f"role missing (escaped) space after role: {role.group(0)!r}"
 
 
 @checker(".rst", ".po")

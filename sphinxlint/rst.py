@@ -161,11 +161,14 @@ def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
     """
     if extra_allowed_before:
         extra_allowed_before = "|" + extra_allowed_before
+    # Both, inline markup start-string and end-string must not be
+    # preceded by an unescaped backslash (except for the end-string of
+    # inline literals).
+    if not (start_string == "``" and end_string == "``"):
+        end_string = f"(?<!\x00){end_string}"
+    start_string = f"(?<!\x00){start_string}"
     return re.compile(
         rf"""
-    (?<!\x00) # Both inline markup start-string and end-string must not be preceded by
-              # an unescaped backslash
-
     (?<=             # Inline markup start-strings must:
         ^|           # start a text block
         \s|          # or be immediately preceded by whitespace,
