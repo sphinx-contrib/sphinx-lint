@@ -138,7 +138,7 @@ def parse_args(argv=None):
     try:
         enabled_checkers = {all_checkers[name] for name in enabled_checkers_names}
     except KeyError as err:
-        print(f"Unknown checker: {err.args[0]}.")
+        print(f"Unknown checker: {err.args[0]}.", file=sys.stderr)
         sys.exit(2)
     return enabled_checkers, args
 
@@ -195,7 +195,7 @@ def print_errors(errors):
     """Print errors (or a message if nothing is to be printed)."""
     qty = 0
     for error in errors:
-        print(error)
+        print(error, file=sys.stderr)
         qty += 1
     if qty == 0:
         print("No problems found.")
@@ -221,7 +221,7 @@ def main(argv=None):
 
     for path in args.paths:
         if not os.path.exists(path):
-            print(f"Error: path {path} does not exist")
+            print(f"Error: path {path} does not exist", file=sys.stderr)
             return 2
 
     todo = [
