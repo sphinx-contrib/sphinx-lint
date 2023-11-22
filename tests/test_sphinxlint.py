@@ -4,7 +4,7 @@ from sphinxlint.utils import paragraphs
 
 import pytest
 
-from sphinxlint.__main__ import main
+from sphinxlint.cli import main
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -29,8 +29,8 @@ def test_sphinxlint_shall_trigger_false_positive(file, capsys):
     assert not has_errors
     has_errors = main(["sphinxlint.py", "--enable", "all", str(file)])
     out, err = capsys.readouterr()
-    assert err == ""
     assert out != "No problems found.\n"
+    assert err != ""
     assert has_errors
 
 
@@ -54,17 +54,17 @@ def test_sphinxlint_shall_not_pass(file, expected_errors, capsys):
     has_errors = main(["sphinxlint.py", "--enable", "all", file])
     out, err = capsys.readouterr()
     assert out != "No problems found.\n"
-    assert err == ""
+    assert err != ""
     assert has_errors
     assert expected_errors, (
         "That's not OK not to tell which errors are expected, "
         """add one using a ".. expect: " line."""
     )
     for expected_error in expected_errors:
-        assert expected_error in out
+        assert expected_error in err
     number_of_expected_errors = len(expected_errors)
-    number_of_reported_errors = len(out.splitlines())
-    assert number_of_expected_errors == number_of_reported_errors, f"{number_of_reported_errors=}, {out=}"
+    number_of_reported_errors = len(err.splitlines())
+    assert number_of_expected_errors == number_of_reported_errors, f"{number_of_reported_errors=}, {err=}"
 
 
 @pytest.mark.parametrize("file", [str(FIXTURE_DIR / "paragraphs.rst")])
@@ -84,8 +84,8 @@ def test_paragraphs(file):
 def test_line_no_in_error_msg(file, capsys):
     has_errors = main(["sphinxlint.py", file])
     out, err = capsys.readouterr()
-    assert err == ""
-    assert "paragraphs.rst:76: role missing colon before" in out
-    assert "paragraphs.rst:70: role use a single backtick" in out
-    assert "paragraphs.rst:65: inline literal missing (escaped) space" in out
+    assert out == ""
+    assert "paragraphs.rst:76: role missing colon before" in err
+    assert "paragraphs.rst:70: role use a single backtick" in err
+    assert "paragraphs.rst:65: inline literal missing (escaped) space" in err
     assert has_errors
