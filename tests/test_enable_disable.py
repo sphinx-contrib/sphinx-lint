@@ -1,5 +1,5 @@
-from random import choice
 import re
+from random import choice
 
 from sphinxlint.cli import main
 

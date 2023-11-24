@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from sphinxlint.utils import paragraphs
-
 import pytest
 
 from sphinxlint.cli import main
+from sphinxlint.utils import paragraphs
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 

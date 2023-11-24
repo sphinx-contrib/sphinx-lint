@@ -6,7 +6,6 @@ from polib import pofile
 
 from sphinxlint import rst
 
-
 PER_FILE_CACHES = []
 
 
