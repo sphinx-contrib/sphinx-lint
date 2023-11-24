@@ -23,6 +23,16 @@ repos:
       - id: trailing-whitespace
         exclude: tests/fixtures/xfail/trailing-whitespaces.rst
 
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: 1.5.1
+    hooks:
+      - id: pyproject-fmt
+        additional_dependencies: [tox]
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.15
+    hooks:
+      - id: validate-pyproject
   - repo: meta
     hooks:
       - id: check-hooks-apply

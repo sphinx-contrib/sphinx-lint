@@ -14,31 +14,36 @@ authors = [
     {name = "Georg Brandl", email = "georg@python.org"},
     {name = "Julien Palard", email = "julien@palard.fr"},
 ]
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Topic :: Documentation :: Sphinx",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: Python Software Foundation License",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3",
-]
 requires-python = ">= 3.8"
-dependencies = [
-    "regex",
-    "polib",
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Python Software Foundation License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Documentation :: Sphinx",
 ]
-dynamic = ["version"]
-
-
+dynamic = [
+  "version",
+]
+dependencies = [
+  "polib",
+  "regex",
+]
 [project.optional-dependencies]
 tests = [
   "pytest",
   "pytest-cov",
 ]
 [project.urls]
-Repository = "https://github.com/sphinx-contrib/sphinx-lint"
 Changelog = "https://github.com/sphinx-contrib/sphinx-lint/releases"
-
+Repository = "https://github.com/sphinx-contrib/sphinx-lint"
 [project.scripts]
 sphinx-lint = "sphinxlint.cli:main"
 
