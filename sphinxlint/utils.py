@@ -187,10 +187,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
             in_literal = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
             block_line_start = lineno
             assert not excluded_lines
-            if (
-                type_of_explicit_markup(line) == "comment"
-                and _COMMENT_RE.search(line)
-            ):
+            if type_of_explicit_markup(line) == "comment" and _COMMENT_RE.search(line):
                 line = "\n"
         output.append(line)
     if excluded_lines and hidden_block_cb:
