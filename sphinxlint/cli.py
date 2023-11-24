@@ -54,7 +54,8 @@ def parse_args(argv=None):
                     sort_fields.append(SortField[field_name.upper()])
                 except KeyError:
                     raise ValueError(
-                        f"Unsupported sort field: {field_name}, supported values are {SortField.as_supported_options()}"
+                        f"Unsupported sort field: {field_name}, "
+                        f"supported values are {SortField.as_supported_options()}"
                     ) from None
             setattr(namespace, self.dest, sort_fields)
 
@@ -85,7 +86,8 @@ def parse_args(argv=None):
         "-d",
         "--disable",
         action=DisableAction,
-        help='comma-separated list of checks to disable. Give "all" to disable them all. '
+        help="comma-separated list of checks to disable. "
+        'Give "all" to disable them all. '
         "Can be used in conjunction with --enable (it's evaluated left-to-right). "
         '"--disable all --enable trailing-whitespace" can be used to enable a '
         "single check.",

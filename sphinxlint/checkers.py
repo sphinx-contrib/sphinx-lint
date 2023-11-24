@@ -12,7 +12,6 @@ from sphinxlint.utils import (
     paragraphs,
 )
 
-
 all_checkers = {}
 
 
@@ -60,7 +59,10 @@ def check_missing_backtick_after_role(file, lines, options=None):
         error = rst.ROLE_MISSING_CLOSING_BACKTICK_RE.search(paragraph)
         if error:
             error_offset = paragraph[: error.start()].count("\n")
-            yield paragraph_lno + error_offset, f"role missing closing backtick: {error.group(0)!r}"
+            yield (
+                paragraph_lno + error_offset,
+                f"role missing closing backtick: {error.group(0)!r}",
+            )
 
 
 _RST_ROLE_RE = re.compile("``.+?``(?!`).", flags=re.DOTALL)
@@ -129,8 +131,12 @@ def check_default_role(file, lines, options=None):
             before_match = line[: match.start()]
             after_match = line[match.end() :]
             stripped_line = line.strip()
-            if (stripped_line.startswith("|") and stripped_line.endswith("|") and
-                stripped_line.count("|") >= 4 and "|" in match.group(0)):
+            if (
+                stripped_line.startswith("|")
+                and stripped_line.endswith("|")
+                and stripped_line.count("|") >= 4
+                and "|" in match.group(0)
+            ):
                 return  # we don't handle tables yet.
             if _ends_with_role_tag(before_match):
                 # It's not a default role: it ends with a tag.
@@ -141,7 +147,10 @@ def check_default_role(file, lines, options=None):
             if match.group(0).startswith("``") and match.group(0).endswith("``"):
                 # It's not a default role: it's an inline literal.
                 continue
-            yield lno, "default role used (hint: for inline literals, use double backticks)"
+            yield (
+                lno,
+                "default role used (hint: for inline literals, use double backticks)",
+            )
 
 
 @checker(".rst", ".po")
@@ -287,7 +296,10 @@ def check_role_with_double_backticks(file, lines, options=None):
             before = paragraph[: inline_literal.start()]
             if _ends_with_role_tag(before):
                 error_offset = paragraph[: inline_literal.start()].count("\n")
-                yield paragraph_lno + error_offset, "role use a single backtick, double backtick found."
+                yield (
+                    paragraph_lno + error_offset,
+                    "role use a single backtick, double backtick found.",
+                )
             paragraph = (
                 paragraph[: inline_literal.start()] + paragraph[inline_literal.end() :]
             )
@@ -308,9 +320,15 @@ def check_missing_space_before_role(file, lines, options=None):
         if match:
             error_offset = paragraph[: match.start()].count("\n")
             if looks_like_glued(match):
-                yield paragraph_lno + error_offset, f"missing space before role ({match.group(0)})."
+                yield (
+                    paragraph_lno + error_offset,
+                    f"missing space before role ({match.group(0)}).",
+                )
             else:
-                yield paragraph_lno + error_offset, f"role missing opening tag colon ({match.group(0)})."
+                yield (
+                    paragraph_lno + error_offset,
+                    f"role missing opening tag colon ({match.group(0)}).",
+                )
 
 
 @checker(".rst", ".po")
@@ -494,4 +512,4 @@ def check_dangling_hyphen(file, lines, options):
     for lno, line in enumerate(lines):
         stripped_line = line.rstrip("\n")
         if _has_dangling_hyphen(stripped_line):
-            yield lno + 1, f"Line ends with dangling hyphen"
+            yield lno + 1, "Line ends with dangling hyphen"

@@ -102,7 +102,7 @@ $ docutils --writer=pseudoxml tests/fixtures/xpass/role-in-code-sample.rst
 
 1. Make sure that the [CI tests pass](https://github.com/sphinx-contrib/sphinx-lint/actions)
    and optionally double-check locally with "friends projects" by running:
-   
+
        sh download-more-tests.sh
        python -m pytest
 2. Go on the [Releases page](https://github.com/sphinx-contrib/sphinx-lint/releases)
