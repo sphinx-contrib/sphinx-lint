@@ -30,6 +30,11 @@ dependencies = [
 dynamic = ["version"]
 
 
+[project.optional-dependencies]
+tests = [
+  "pytest",
+  "pytest-cov",
+]
 [project.urls]
 Repository = "https://github.com/sphinx-contrib/sphinx-lint"
 Changelog = "https://github.com/sphinx-contrib/sphinx-lint/releases"
