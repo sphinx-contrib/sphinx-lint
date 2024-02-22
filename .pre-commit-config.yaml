@@ -5,7 +5,6 @@ repos:
       - id: ruff
         args: ["--exit-non-zero-on-fix"]
       - id: ruff-format
-        args: ["--preview"]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

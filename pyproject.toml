@@ -78,5 +78,8 @@ extend-ignore = [
   "UP038", # makes code slower and more verbose
 ]
 
+[tool.ruff.format]
+preview = true
+
 [tool.pylint.variables]
 callbacks = ["check_"]
