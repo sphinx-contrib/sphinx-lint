@@ -4,6 +4,7 @@ In this file:
 - All constants are ALL_CAPS
 - All compiled regexes are suffixed by _RE
 """
+
 from functools import lru_cache
 
 import regex as re
