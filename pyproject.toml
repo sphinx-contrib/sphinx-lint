@@ -57,6 +57,7 @@ packages = ["sphinxlint"]
 local_scheme = "no-local-version"
 
 [tool.ruff.lint]
+fix = true
 select = [
   "E", # pycodestyle errors
   "F", # pyflakes errors
