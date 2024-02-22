@@ -56,8 +56,6 @@ packages = ["sphinxlint"]
 [tool.hatch.version.raw-options]
 local_scheme = "no-local-version"
 
-[tool.black]
-
 [tool.ruff]
 select = [
   "E", # pycodestyle errors
