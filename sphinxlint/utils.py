@@ -1,4 +1,5 @@
 """Just a bunch of utility functions for sphinxlint."""
+
 from functools import lru_cache
 
 import regex as re

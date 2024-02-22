@@ -56,14 +56,14 @@ packages = ["sphinxlint"]
 [tool.hatch.version.raw-options]
 local_scheme = "no-local-version"
 
-[tool.black]
-
 [tool.ruff]
+fix = true
+
+[tool.ruff.lint]
 select = [
   "E", # pycodestyle errors
   "F", # pyflakes errors
   "I", # isort
-  "ISC", # flake8-implicit-str-concat
   "PGH", # pygrep-hooks
   "RUF100", # unused noqa (yesqa)
   "UP", # pyupgrade
@@ -77,6 +77,9 @@ extend-ignore = [
   "E241", # Multiple spaces after ','
   "UP038", # makes code slower and more verbose
 ]
+
+[tool.ruff.format]
+preview = true
 
 [tool.pylint.variables]
 callbacks = ["check_"]

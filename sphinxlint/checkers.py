@@ -445,7 +445,7 @@ def check_line_too_long(file, lines, options=None):
                 continue  # ignore anonymous hyperlink targets
             if _is_very_long_string_literal(line):
                 continue  # ignore a very long literal string
-            yield lno + 1, f"Line too long ({len(line)-1}/{options.max_line_length})"
+            yield lno + 1, f"Line too long ({len(line) - 1}/{options.max_line_length})"
 
 
 @checker(".html", enabled=False, rst_only=False)
