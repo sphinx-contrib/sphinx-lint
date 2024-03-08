@@ -6,8 +6,8 @@ env:
   FORCE_COLOR: 1
 
 concurrency:
-  group: check-${{ github.ref }}
-  cancel-in-progress: true
+  group: check-tests-tox-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
