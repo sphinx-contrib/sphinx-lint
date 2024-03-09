@@ -1,4 +1,5 @@
-name: Tests with Tox
+---
+name: Tests
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -7,7 +8,7 @@ env:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # cancel all except push to main branch for have always full results
+  # cancel all except push to main branch to have always full results
   cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
@@ -43,7 +44,8 @@ jobs:
         if: matrix.python-version == '3.13' && matrix.os == 'ubuntu-latest'
         run: sh download-more-tests.sh
       - name: Tox tests
-        run: tox -e py
+        run: |
+          tox -e py
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
