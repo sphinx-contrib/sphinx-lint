@@ -38,7 +38,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -U wheel tox
+          pip install -U pip
+          pip install -U tox
 
       - name: Download more tests from friend projects
         if: matrix.python-version == '3.13' && matrix.os == 'ubuntu-latest'
