@@ -1,11 +1,15 @@
 ---
-
 name: Tests
 
 on: [push, pull_request, workflow_dispatch]
 
 env:
   FORCE_COLOR: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # cancel all except push to main branch to have always full results
+  cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
   test:
@@ -34,9 +38,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
-          python -m pip install -U wheel
-          python -m pip install -U tox
+          pip install -U pip
+          pip install -U tox
 
       - name: Download more tests from friend projects
         if: matrix.python-version == '3.13' && matrix.os == 'ubuntu-latest'
