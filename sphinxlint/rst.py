@@ -61,7 +61,10 @@ OPENERS = (
 # fmt: off
 DIRECTIVES_CONTAINING_RST = [
     # standard docutils ones
-    'admonition', 'attention', 'caution', 'class', 'compound', 'container',
+    'admonition', 'attention',
+    'c:data', 'c:enum', 'c:enumerator', 'c:func', 'c:macro', 'c:member',
+    'c:struct', 'c:type', 'c:union', 'c:var',
+    'caution', 'class', 'compound', 'container',
     'danger', 'epigraph', 'error', 'figure', 'footer', 'header', 'highlights',
     'hint', 'image', 'important', 'include', 'line-block', 'list-table', 'meta',
     'note', 'parsed-literal', 'pull-quote', 'replace', 'sidebar', 'tip', 'topic',
