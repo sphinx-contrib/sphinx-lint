@@ -70,6 +70,16 @@ reStructuredText point of view, one case use `docutils`'s `pseudoxml`
 writer, like:
 
 ```text
+$ docutils --writer=pseudoxml <(echo '``hello``')
+<document source="/dev/fd/63">
+    <paragraph>
+        <literal>
+            hello
+```
+
+Or against a whole file:
+
+```text
 $ docutils --writer=pseudoxml tests/fixtures/xpass/role-in-code-sample.rst
 <document source="tests/fixtures/xpass/role-in-code-sample.rst">
     <paragraph>
