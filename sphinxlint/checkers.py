@@ -513,3 +513,16 @@ def check_dangling_hyphen(file, lines, options):
         stripped_line = line.rstrip("\n")
         if _has_dangling_hyphen(stripped_line):
             yield lno + 1, "Line ends with dangling hyphen"
+
+
+@checker(".rst", ".po", rst_only=False)
+def check_unnecessary_func_parentheses(filename, lines, options):
+    """Check for unnecessary parentheses in :func: roles.
+
+    Bad:  :func:`test()`
+    Good: :func:`test`
+    """
+    for lno, line in enumerate(lines, start=1):
+        match = rst.FUNC_ROLE_WITH_UNNECESSARY_PARENTHESES.search(line)
+        if match:
+            yield lno, f"Unnecessary parentheses in {match.group(0).strip()!r}"
