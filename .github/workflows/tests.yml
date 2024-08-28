@@ -21,6 +21,9 @@ jobs:
         # friend projects below to the latest one
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
         os: [ubuntu-latest, macos-latest, windows-latest]
+        test-set: [base]
+        include:
+          - {python-version: "3.13", os: ubuntu-latest, test-set: friend-projects}
         exclude:
           # TODO Add Windows when regex wheel available for 3.13
           - {os: windows-latest, python-version: "3.13"}
@@ -42,7 +45,7 @@ jobs:
           pip install -U tox
 
       - name: Download more tests from friend projects
-        if: matrix.python-version == '3.13' && matrix.os == 'ubuntu-latest'
+        if: matrix.test-set == 'friend-projects'
         run: sh download-more-tests.sh
       - name: Tox tests
         run: |
