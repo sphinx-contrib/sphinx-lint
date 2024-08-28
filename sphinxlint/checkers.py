@@ -515,14 +515,16 @@ def check_dangling_hyphen(file, lines, options):
             yield lno + 1, "Line ends with dangling hyphen"
 
 
-@checker(".rst", ".po", rst_only=False)
+@checker(".rst", ".po", rst_only=False, enabled=False)
 def check_unnecessary_func_parentheses(filename, lines, options):
     """Check for unnecessary parentheses in :func: roles.
 
     Bad:  :func:`test()`
     Good: :func:`test`
+
+    TODO: The checker is disabled since some of the friend projects does not follow
+    this new rule. We should enable it once the issues are all resolved.
     """
     for lno, line in enumerate(lines, start=1):
-        match = rst.FUNC_ROLE_WITH_UNNECESSARY_PARENTHESES.search(line)
-        if match:
+        if match := rst.FUNC_ROLE_WITH_UNNECESSARY_PARENTHESES.search(line):
             yield lno, f"Unnecessary parentheses in {match.group(0).strip()!r}"
