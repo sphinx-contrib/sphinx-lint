@@ -72,9 +72,10 @@ i.e. at :line:``70``!
 
 Note that the errors report the exact
 line, not the first line of the paragraph
-so for example an error like
-:foo`missing colon` will be reported
-at line 76 and not at line 73!
+so for example two errors like
+:foo`missing colon` and :blah`other`
+will both be reported at line 76
+and not at line 73!
 
 
 .. note:
