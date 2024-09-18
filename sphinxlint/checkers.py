@@ -56,8 +56,7 @@ def check_missing_backtick_after_role(file, lines, options=None):
     for paragraph_lno, paragraph in paragraphs(lines):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
-        error = rst.ROLE_MISSING_CLOSING_BACKTICK_RE.search(paragraph)
-        if error:
+        for error in rst.ROLE_MISSING_CLOSING_BACKTICK_RE.finditer(paragraph):
             error_offset = paragraph[: error.start()].count("\n")
             yield (
                 paragraph_lno + error_offset,
@@ -126,8 +125,7 @@ def check_default_role(file, lines, options=None):
     for lno, line in enumerate(lines, start=1):
         line = clean_paragraph(line)
         line = escape2null(line)
-        match = rst.INTERPRETED_TEXT_RE.search(line)
-        if match:
+        for match in rst.INTERPRETED_TEXT_RE.finditer(line):
             before_match = line[: match.start()]
             after_match = line[match.end() :]
             stripped_line = line.strip()
@@ -201,8 +199,7 @@ def check_missing_space_after_role(file, lines, options=None):
     """
     for lno, line in enumerate(lines, start=1):
         line = clean_paragraph(line)
-        role = _SUSPICIOUS_ROLE.search(line)
-        if role:
+        for role in _SUSPICIOUS_ROLE.finditer(line):
             yield lno, f"role missing (escaped) space after role: {role.group(0)!r}"
 
 
@@ -214,8 +211,7 @@ def check_role_without_backticks(file, lines, options=None):
     Good: :func:`pdb.main`
     """
     for lno, line in enumerate(lines, start=1):
-        no_backticks = rst.ROLE_WITH_NO_BACKTICKS_RE.search(line)
-        if no_backticks:
+        for no_backticks in rst.ROLE_WITH_NO_BACKTICKS_RE.finditer(line):
             yield lno, f"role with no backticks: {no_backticks.group(0)!r}"
 
 
@@ -316,8 +312,7 @@ def check_missing_space_before_role(file, lines, options=None):
         if paragraph.count("|") > 4:
             return  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
-        match = rst.ROLE_GLUED_WITH_WORD_RE.search(paragraph)
-        if match:
+        for match in rst.ROLE_GLUED_WITH_WORD_RE.finditer(paragraph):
             error_offset = paragraph[: match.start()].count("\n")
             if looks_like_glued(match):
                 yield (
@@ -386,8 +381,7 @@ def check_missing_colon_in_role(file, lines, options=None):
     Good: :issue:`123`
     """
     for lno, line in enumerate(lines, start=1):
-        match = rst.ROLE_MISSING_RIGHT_COLON_RE.search(line)
-        if match:
+        for match in rst.ROLE_MISSING_RIGHT_COLON_RE.finditer(line):
             yield lno, f"role missing colon before first backtick ({match.group(0)})."
 
 
@@ -471,8 +465,7 @@ def check_triple_backticks(file, lines, options=None):
     syntax, but it's really uncommon.
     """
     for lno, line in enumerate(lines):
-        match = rst.TRIPLE_BACKTICKS_RE.search(line)
-        if match:
+        for match in rst.TRIPLE_BACKTICKS_RE.finditer(line):
             yield lno + 1, "There's no rst syntax using triple backticks"
 
 
@@ -523,5 +516,5 @@ def check_unnecessary_parentheses(filename, lines, options):
     Good: :func:`test`
     """
     for lno, line in enumerate(lines, start=1):
-        if match := rst.ROLE_WITH_UNNECESSARY_PARENTHESES_RE.search(line):
+        for match in rst.ROLE_WITH_UNNECESSARY_PARENTHESES_RE.finditer(line):
             yield lno, f"Unnecessary parentheses in {match.group(0).strip()!r}"

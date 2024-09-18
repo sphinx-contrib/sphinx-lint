@@ -86,7 +86,7 @@ def test_line_no_in_error_msg(file, capsys):
     has_errors = main(["sphinxlint.py", file])
     out, err = capsys.readouterr()
     assert out == ""
-    assert "paragraphs.rst:76: role missing colon before" in err
+    assert err.count("paragraphs.rst:76: role missing colon before") == 2
     assert "paragraphs.rst:70: role use a single backtick" in err
     assert "paragraphs.rst:65: inline literal missing (escaped) space" in err
     assert has_errors
