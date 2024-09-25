@@ -24,9 +24,7 @@ jobs:
         test-set: [base]
         include:
           - {python-version: "3.13", os: ubuntu-latest, test-set: friend-projects}
-        exclude:
-          # TODO Add Windows when regex wheel available for 3.13
-          - {os: windows-latest, python-version: "3.13"}
+          - {python-version: "3.13", os: windows-latest, test-set: friend-projects}
 
     steps:
       - uses: actions/checkout@v4
