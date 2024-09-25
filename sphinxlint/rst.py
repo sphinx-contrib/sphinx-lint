@@ -5,7 +5,7 @@ In this file:
 - All compiled regexes are suffixed by _RE
 """
 
-from functools import lru_cache
+from functools import cache
 
 import regex as re
 
@@ -153,7 +153,7 @@ ASCII_ALLOWED_AFTER_INLINE_MARKUP = r"""-.,:;!?/'")\]}>"""
 UNICODE_ALLOWED_AFTER_INLINE_MARKUP = r"\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}"
 
 
-@lru_cache(maxsize=None)
+@cache
 def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
     """Generate a regex matching an inline markup.
 
