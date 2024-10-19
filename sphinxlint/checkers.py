@@ -237,8 +237,8 @@ def check_backtick_before_role(file, lines, options=None):
 def check_missing_space_in_hyperlink(file, lines, options=None):
     """Search for hyperlinks missing a space.
 
-    Bad:  `Link text<https://example.com>_`
-    Good: `Link text <https://example.com>_`
+    Bad:  `Link text<https://example.com>`_
+    Good: `Link text <https://example.com>`_
     """
     for lno, line in enumerate(lines, start=1):
         if "`" not in line:
