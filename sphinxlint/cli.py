@@ -27,6 +27,7 @@ def parse_args(argv=None):
     if argv is None:
         argv = sys.argv
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.color = True
 
     enabled_checkers_names = {
         checker.name for checker in all_checkers.values() if checker.enabled
