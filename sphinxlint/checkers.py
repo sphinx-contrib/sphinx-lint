@@ -441,7 +441,7 @@ def check_line_too_long(file, lines, options=None):
             if _is_very_long_string_literal(line):
                 continue  # ignore a very long literal string
             if _is_very_long_inline_link(line):
-                continue  # ignore a very long URL on its own line"
+                continue  # ignore a very long URL on its own line
             yield lno + 1, f"Line too long ({len(line) - 1}/{options.max_line_length})"
 
 
