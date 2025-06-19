@@ -398,7 +398,7 @@ def check_horizontal_tab(file, lines, options=None):
     r"""Check for horizontal tabs (\t) in lines."""
     for lno, line in enumerate(lines):
         if "\t" in line:
-            yield lno + 1, "OMG TABS!!!1"
+            yield lno + 1, "OMG TABS!!!!"
 
 
 @checker(".py", ".rst", ".po", rst_only=False)
