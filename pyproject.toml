@@ -9,7 +9,8 @@ requires = [
 name = "sphinx-lint"
 description = "Check for stylistic and formal issues in.rst and.py files included in the documentation."
 readme = "README.md"
-license = { text = "PSF License" }
+license = "PSF-2.0"
+license-files = [ "LICENSE" ]
 authors = [
   { name = "Georg Brandl", email = "georg@python.org" },
   { name = "Julien Palard", email = "julien@palard.fr" },
@@ -18,7 +19,6 @@ requires-python = ">=3.9"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Python Software Foundation License",
   "Natural Language :: English",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.9",
