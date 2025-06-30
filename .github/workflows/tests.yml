@@ -25,9 +25,6 @@ jobs:
         include:
           - {python-version: "3.13", os: ubuntu-latest, test-set: friend-projects}
           - {python-version: "3.13", os: windows-latest, test-set: friend-projects}
-        exclude:
-          # Pending 3.14 wheels for regex https://pypi.org/project/regex/#files
-          - {python-version: "3.14", os: windows-latest}
 
     steps:
       - uses: actions/checkout@v4
