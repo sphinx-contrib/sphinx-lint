@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "sphinx-lint"
-description = "Check for stylistic and formal issues in.rst and.py files included in the documentation."
+description = "Check for stylistic and formal issues in .rst and .py files included in the documentation."
 readme = "README.md"
 license = "PSF-2.0"
 license-files = [ "LICENSE" ]
