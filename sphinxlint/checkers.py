@@ -442,6 +442,7 @@ _is_long_interpreted_text = re.compile(r"^\s*\W*(:(\w+:)+)?`.*`\W*$").match
 _starts_with_directive_or_hyperlink = re.compile(r"^\s*\.\. ").match
 _starts_with_anonymous_hyperlink = re.compile(r"^\s*__ ").match
 _is_very_long_string_literal = re.compile(r"^\s*``[^`]+``$").match
+_is_very_long_inline_link = re.compile(r"^\s*<.*(>`_).?$").match
 
 
 @checker(".rst", ".po", enabled=False, rst_only=True)
@@ -460,6 +461,8 @@ def check_line_too_long(file, lines, options=None):
                 continue  # ignore anonymous hyperlink targets
             if _is_very_long_string_literal(line):
                 continue  # ignore a very long literal string
+            if _is_very_long_inline_link(line):
+                continue  # ignore a very long URL on its own line
             yield lno + 1, f"Line too long ({len(line) - 1}/{options.max_line_length})"
 
 
