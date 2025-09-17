@@ -323,6 +323,19 @@ def check_role_with_double_backticks(file, lines, options=None):
 
 
 @checker(".rst", ".po")
+def check_role_with_extra_backtick(filename, lines, options):
+    """Check for extra backtick in roles.
+
+    Bad:  :func:`foo``
+    Bad:  :func:``foo`
+    Good: :func:`foo`
+    """
+    for lno, line in enumerate(lines, start=1):
+        for match in rst.ROLE_WITH_EXTRA_BACKTICK_RE.finditer(line):
+            yield lno, f"Extra backtick in role: {match.group(0).strip()!r}"
+
+
+@checker(".rst", ".po")
 def check_missing_space_before_role(file, lines, options=None):
     """Search for missing spaces before roles.
 
