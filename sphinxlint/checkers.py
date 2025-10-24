@@ -542,3 +542,15 @@ def check_unnecessary_parentheses(filename, lines, options):
     for lno, line in enumerate(lines, start=1):
         for match in rst.ROLE_WITH_UNNECESSARY_PARENTHESES_RE.finditer(line):
             yield lno, f"Unnecessary parentheses in {match.group(0).strip()!r}"
+
+
+@checker(".rst", ".po")
+def check_exclamation_and_tilde(file, lines, options):
+    """Check for roles that start with an exclamation mark and tilde (`!~`).
+
+    Bad:  :meth:`!~list.pop`
+    Good: :meth:`!pop`
+    """
+    for lno, line in enumerate(lines, start=1):
+        for match in rst.ROLE_WITH_EXCLAMATION_AND_TILDE_RE.finditer(line):
+            yield lno, f"Found a role starting with `!~` in {match.group(0).strip()!r}."
