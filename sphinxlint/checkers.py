@@ -210,6 +210,18 @@ def check_missing_space_after_role(file, lines, options=None):
 
 
 @checker(".rst", ".po")
+def check_role_with_bang_and_tilde(file, lines, options=None):
+    """Search roles both a ! and a ~.
+
+    Bad:  :func:`!~pdb.main`
+    Good: :func:`!pdb.main` or :func:`~pdb.main`
+    """
+    for lno, line in enumerate(lines, start=1):
+        for tilde_bang in rst.ROLE_WITH_BOTH_BANG_AND_TILDE_RE.finditer(line):
+            yield lno, f"role with both a ~ and a !: {tilde_bang.group(0)!r}"
+
+
+@checker(".rst", ".po")
 def check_role_without_backticks(file, lines, options=None):
     """Search roles without backticks.
 

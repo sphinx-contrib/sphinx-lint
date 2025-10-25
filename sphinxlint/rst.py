@@ -252,6 +252,10 @@ THREE_DOT_DIRECTIVE_RE = re.compile(rf"\.\.\. {ALL_DIRECTIVES}::")
 # :const:`None`
 DOUBLE_BACKTICK_ROLE_RE = re.compile(rf"(?<!``){ROLE_HEAD}``")
 
+
+# Find role that use both ! and ~ flags.
+ROLE_WITH_BOTH_BANG_AND_TILDE_RE = re.compile(rf"(?<!`){ROLE_HEAD}`[!~]{{2}}")
+
 START_STRING_PREFIX = f"(^|(?<=\\s|[{OPENERS}{DELIMITERS}|]))"
 END_STRING_SUFFIX = f"($|(?=\\s|[\x00{CLOSING_DELIMITERS}{DELIMITERS}{CLOSERS}|]))"
 
