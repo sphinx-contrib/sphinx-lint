@@ -252,6 +252,13 @@ THREE_DOT_DIRECTIVE_RE = re.compile(rf"\.\.\. {ALL_DIRECTIVES}::")
 # :const:`None`
 DOUBLE_BACKTICK_ROLE_RE = re.compile(rf"(?<!``){ROLE_HEAD}``")
 
+# Find roles with extra backtick like:
+# :mod:`!cgi`` (extra backtick at the end)
+# :mod:``!cgi` (extra backtick at the beginning)
+ROLE_WITH_EXTRA_BACKTICK_RE = re.compile(
+    rf"({ROLE_HEAD}(?:``[^`\s]+`(?!\S)|`[^`\s]+``))(?!`)"
+)
+
 START_STRING_PREFIX = f"(^|(?<=\\s|[{OPENERS}{DELIMITERS}|]))"
 END_STRING_SUFFIX = f"($|(?=\\s|[\x00{CLOSING_DELIMITERS}{DELIMITERS}{CLOSERS}|]))"
 
