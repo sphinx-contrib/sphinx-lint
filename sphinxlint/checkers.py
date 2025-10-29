@@ -261,15 +261,17 @@ def check_missing_underscore_after_hyperlink(file, lines, options=None):
     URLs within download directives don't need trailing underscores.
     https://www.sphinx-doc.org/en/master/usage/referencing.html#role-download
     """
-    for lno, line in enumerate(lines, start=1):
-        if "`" not in line:
+    for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
             continue
-        for match in rst.SEEMS_HYPERLINK_RE.finditer(line):
+        for match in rst.SEEMS_HYPERLINK_RE.finditer(paragraph):
             if not match.group(2):
                 # Check if this is within any download directive on the line
                 # Include optional underscore in pattern to handle both cases
                 is_in_download = False
-                for download_match in rst.HYPERLINK_WITHIN_DOWNLOAD_RE.finditer(line):
+                for download_match in rst.HYPERLINK_WITHIN_DOWNLOAD_RE.finditer(
+                    paragraph
+                ):
                     if (
                         match.start() >= download_match.start()
                         and match.end() <= download_match.end()
@@ -277,7 +279,11 @@ def check_missing_underscore_after_hyperlink(file, lines, options=None):
                         is_in_download = True
                         break
                 if not is_in_download:
-                    yield lno, "missing underscore after closing backtick in hyperlink"
+                    error_offset = paragraph[: match.start()].count("\n")
+                    yield (
+                        paragraph_lno + error_offset,
+                        "missing underscore after closing backtick in hyperlink",
+                    )
 
 
 @checker(".rst", ".po")
