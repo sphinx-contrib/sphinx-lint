@@ -287,4 +287,4 @@ ROLE_MISSING_CLOSING_BACKTICK_RE = re.compile(rf"({ROLE_HEAD}`[^`]+?)[^`]*$")
 
 ROLE_WITH_UNNECESSARY_PARENTHESES_RE = re.compile(r"(^|\s):(func|meth):`[^`]+\(\)`")
 
-ROLE_WITH_EXCLAMATION_AND_TILDE_RE = re.compile(rf"{ROLE_HEAD}`!\~[^`]*`")
+ROLE_WITH_EXCLAMATION_AND_TILDE_RE = re.compile(rf"{ROLE_HEAD}`[!~]{{2}}[^`]*`")

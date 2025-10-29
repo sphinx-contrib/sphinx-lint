@@ -553,4 +553,7 @@ def check_exclamation_and_tilde(file, lines, options):
     """
     for lno, line in enumerate(lines, start=1):
         for match in rst.ROLE_WITH_EXCLAMATION_AND_TILDE_RE.finditer(line):
-            yield lno, f"Found a role starting with `!~` in {match.group(0).strip()!r}."
+            yield (
+                lno,
+                f"Found a role with both `!` and `~` in {match.group(0).strip()!r}.",
+            )
