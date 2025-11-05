@@ -280,9 +280,7 @@ ROLE_WITH_NO_BACKTICKS_RE = re.compile(rf"(^|\s):{SIMPLENAME}:(?![`:])[^\s`]+(\s
 #    The :issue`123` is ...
 ROLE_MISSING_RIGHT_COLON_RE = re.compile(rf"(^|\s):{SIMPLENAME}`(?!`)")
 
-SEEMS_HYPERLINK_RE = re.compile(r"`[^`]+?(\s?)<https?://[^`]+>`(_?)")
-
-HYPERLINK_WITHIN_DOWNLOAD_RE = re.compile(r":download:`[^`]*`_?")
+SEEMS_HYPERLINK_RE = re.compile(r"(:download:)?`[^`]+?(\s?)<https?://[^`]+>`(_?)")
 
 LEAKED_MARKUP_RE = re.compile(r"[a-z]::\s|`|\.\.\s*\w+:")
 

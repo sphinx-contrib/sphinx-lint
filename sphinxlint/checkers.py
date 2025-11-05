@@ -246,16 +246,21 @@ def check_missing_space_in_hyperlink(file, lines, options=None):
         if "`" not in line:
             continue
         for match in rst.SEEMS_HYPERLINK_RE.finditer(line):
-            if not match.group(1):
+            if not match.group(2):
                 yield lno, "missing space before < in hyperlink"
 
 
 @checker(".rst", ".po")
 def check_missing_underscore_after_hyperlink(file, lines, options=None):
-    """Search for hyperlinks missing underscore after their closing backtick.
+    """Search for hyperlinks with incorrect underscore usage after closing backtick.
 
+    For regular hyperlinks:
     Bad:  `Link text <https://example.com>`
     Good: `Link text <https://example.com>`_
+
+    For hyperlinks within download directives:
+    Bad:  :download:`file <https://example.com>`_
+    Good: :download:`file <https://example.com>`
 
     Note:
     URLs within download directives don't need trailing underscores.
@@ -265,19 +270,15 @@ def check_missing_underscore_after_hyperlink(file, lines, options=None):
         if "`" not in line:
             continue
         for match in rst.SEEMS_HYPERLINK_RE.finditer(line):
-            if not match.group(2):
-                # Check if this is within any download directive on the line
-                # Include optional underscore in pattern to handle both cases
-                is_in_download = False
-                for download_match in rst.HYPERLINK_WITHIN_DOWNLOAD_RE.finditer(line):
-                    if (
-                        match.start() >= download_match.start()
-                        and match.end() <= download_match.end()
-                    ):
-                        is_in_download = True
-                        break
-                if not is_in_download:
-                    yield lno, "missing underscore after closing backtick in hyperlink"
+            is_in_download = bool(match.group(1))
+            has_underscore = bool(match.group(3))
+
+            if is_in_download and has_underscore:
+                yield lno, "unnecessary underscore after closing backtick in hyperlink"
+            elif not is_in_download and not has_underscore:
+                yield lno, "missing underscore after closing backtick in hyperlink"
+            else:
+                continue
 
 
 @checker(".rst", ".po")
