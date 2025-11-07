@@ -552,6 +552,8 @@ def check_exclamation_and_tilde(file, lines, options):
     Good: :meth:`!pop`
     """
     for lno, line in enumerate(lines, start=1):
+       if not ("~" in line and "!" in line and "`" in line):
+            continue
         for match in rst.ROLE_WITH_EXCLAMATION_AND_TILDE_RE.finditer(line):
             yield (
                 lno,
