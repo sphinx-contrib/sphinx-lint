@@ -1,5 +1,6 @@
 """Just a bunch of utility functions for sphinxlint."""
 
+import ast
 from functools import lru_cache
 
 import regex as re
@@ -228,5 +229,24 @@ def po2rst(text):
         while len(output) + 1 < entry.linenum:
             output.append("\n")
         for line in entry.msgstr.splitlines():
+            output.append(line + "\n")
+    return "".join(output)
+
+
+def py2rst(text):
+    output = []
+    tree = ast.parse(text)
+    for node in ast.walk(tree):
+        try:
+            docstring = ast.get_docstring(node, clean=True)
+        except TypeError:
+            continue
+        if docstring is None:
+            continue
+        if not hasattr(node, "lineno"):
+            node.lineno = 1
+        while len(output) + 1 <= node.lineno:
+            output.append("\n")
+        for line in docstring.splitlines():
             output.append(line + "\n")
     return "".join(output)

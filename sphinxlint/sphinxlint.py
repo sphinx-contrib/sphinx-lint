@@ -1,8 +1,8 @@
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from os.path import splitext
 
-from sphinxlint.utils import PER_FILE_CACHES, hide_non_rst_blocks, po2rst
+from sphinxlint.utils import PER_FILE_CACHES, hide_non_rst_blocks, po2rst, py2rst
 
 
 @dataclass(frozen=True)
@@ -63,7 +63,15 @@ def check_file(filename, checkers, options: CheckersOptions = None):
             return [f"{filename}: cannot open: {err}"]
         except UnicodeDecodeError as err:
             return [f"{filename}: cannot decode as UTF-8: {err}"]
-        return check_text(filename, text, checkers, options)
+        errors = check_text(filename, text, checkers, options)
+        if filename.endswith(".py"):
+            errors += [
+                replace(error, filename=error.filename[:-4])
+                for error in check_text(
+                    filename + ".rst", py2rst(text), checkers, options
+                )
+            ]
+        return errors
     finally:
         for memoized_function in PER_FILE_CACHES:
             memoized_function.cache_clear()
