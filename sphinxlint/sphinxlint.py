@@ -49,7 +49,9 @@ def check_text(filename, text, checkers, options=None):
     return errors
 
 
-def check_file(filename, checkers, options: CheckersOptions = None):
+def check_file(
+    filename, checkers, options: CheckersOptions | None = None, check_docstrings=False
+):
     try:
         ext = splitext(filename)[1]
         if not any(ext in checker.suffixes for checker in checkers):
@@ -64,7 +66,7 @@ def check_file(filename, checkers, options: CheckersOptions = None):
         except UnicodeDecodeError as err:
             return [f"{filename}: cannot decode as UTF-8: {err}"]
         errors = check_text(filename, text, checkers, options)
-        if filename.endswith(".py"):
+        if check_docstrings and filename.endswith(".py"):
             errors += [
                 replace(error, filename=error.filename[:-4])
                 for error in check_text(
