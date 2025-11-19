@@ -1,0 +1,74 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" (C) Copyright 2025 Julien Palard <julien@palard.fr>
+.\"
+.TH sphinx-lint 1 "November 16 2025"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+sphinx-lint \- proofreads \fB.rst\fP files
+.SH SYNOPSIS
+.B sphinx-lint
+[-h] [-v] [-i IGNORE] [-d DISABLE] [-e ENABLE] [--list]
+[--max-line-length MAX_LINE_LENGTH] [-s SORT_BY] [-j N] [-V] [paths ...]
+.br
+.SH DESCRIPTION
+\fBsphinx-lint\fP searches for stylistic and formal issues in \fB.rst\fP
+and \fB.py\fP files.
+.PP
+If no paths are given, \fBsphinx-lint\fP searches files starting from the
+current working directory.
+.SH OPTIONS
+These programs follow the usual GNU command line syntax, with long
+options starting with two dashes ('\-').
+A summary of options is included below.
+.TP
+.B \-h, \-\-help
+Show a summary of options.
+.TP
+.B \-v, \-\-verbose
+Print all checked file names and additional information.
+.TP
+.B -i, --ignore IGNORE
+Ignore the specified subdirectory or file path.
+.TP
+.B -d, --disable DISABLE
+Comma-separated list of checks to disable. Use \fIall\fP to disable all checks.
+Can be used in conjunction with \fB--enable\fP (evaluated left-to-right).
+For example, \fB--disable all --enable trailing-whitespace\fP enables a
+single check while disabling all others.
+.TP
+.B -e, --enable ENABLE
+Comma-separated list of checks to enable. Use \fIall\fP to enable all checks.
+Can be used in conjunction with \fB--disable\fP (evaluated left-to-right).
+For example, \fB--enable all --disable trailing-whitespace\fP enables all
+checks except the specified one.
+.TP
+.B --list
+List enabled checkers and exit. Useful to see which checkers would be
+used with a given set of \fB--enable\fP and \fB--disable\fP options.
+.TP
+.B --max-line-length MAX_LINE_LENGTH
+Maximum number of characters allowed on a single line.
+.TP
+.B -s, --sort-by SORT_BY
+Comma-separated list of fields used to sort errors. Available fields:
+\fIfilename\fP, \fIline\fP, \fIerror_type\fP.
+.TP
+.B -j, --jobs N
+Run in parallel with \fBN\fP processes. Defaults to \fIauto\fP, which sets
+\fBN\fP to the number of logical CPUs. Values less than one are treated as \fB1\fP.
+.TP
+.B -V, --version
+Show the program's version number and exit.
+.SH SEE ALSO
+.BR sphinx-build (1)
