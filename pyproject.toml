@@ -52,8 +52,13 @@ packages = [ "sphinxlint" ]
 [tool.hatch.version.raw-options]
 local_scheme = "no-local-version"
 
+[tool.black]
+
 [tool.ruff]
 fix = true
+
+[tool.isort]
+profile = "black"
 
 format.preview = true
 lint.select = [

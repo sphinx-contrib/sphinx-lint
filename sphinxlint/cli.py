@@ -133,6 +133,11 @@ def parse_args(argv=None):
         default=StoreNumJobsAction.job_count("auto"),
     )
     parser.add_argument(
+        "--check-docstrings",
+        action="store_true",
+        help="Also check docstrings in Python files.",
+    )
+    parser.add_argument(
         "-V", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
@@ -228,7 +233,7 @@ def main(argv=None):
             return 2
 
     todo = [
-        (path, enabled_checkers, options)
+        (path, enabled_checkers, options, args.check_docstrings)
         for path in chain.from_iterable(walk(path, args.ignore) for path in args.paths)
     ]
 
