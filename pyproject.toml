@@ -57,9 +57,11 @@ fix = true
 
 format.preview = true
 lint.select = [
+  "C4",     # flake8-comprehensions
   "E",      # pycodestyle errors
   "F",      # pyflakes errors
   "I",      # isort
+  "PERF",   # perflint
   "PGH",    # pygrep-hooks
   "RUF100", # unused noqa (yesqa)
   "UP",     # pyupgrade
@@ -73,6 +75,8 @@ lint.extend-ignore = [
   "E241",  # Multiple spaces after ','
   "UP038", # makes code slower and more verbose
 ]
+lint.per-file-ignores."sphinxlint/cli.py" = [ "PERF203" ] # `try`-`except` within a loop incurs performance overhead
+lint.per-file-ignores."tests/test_filter_out_literal.py" = [ "PERF402" ] # Use `list` or `list.copy` to copy a list
 
 [tool.pylint.variables]
 callbacks = [ "check_" ]

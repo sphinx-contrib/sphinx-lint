@@ -41,10 +41,11 @@ def gather_xfail():
     """
     marker = ".. expect: "
     for file in (FIXTURE_DIR / "xfail").iterdir():
-        expected_errors = []
-        for line in Path(file).read_text(encoding="UTF-8").splitlines():
-            if line.startswith(marker):
-                expected_errors.append(line[len(marker) :])
+        expected_errors = [
+            line[len(marker) :]
+            for line in Path(file).read_text(encoding="UTF-8").splitlines()
+            if line.startswith(marker)
+        ]
         yield str(file), expected_errors
 
 

@@ -181,7 +181,7 @@ def sort_errors(results, sorted_by):
         for results in results:
             yield from results
         return
-    errors = list(error for errors in results for error in errors)
+    errors = [error for errors in results for error in errors]
     # sorting is stable in python, so we can sort in reverse order to get the
     # ordering specified by the user
     for sort_field in reversed(sorted_by):

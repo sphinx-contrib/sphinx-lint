@@ -227,6 +227,5 @@ def po2rst(text):
         # Don't check original msgid, assume it's checked directly.
         while len(output) + 1 < entry.linenum:
             output.append("\n")
-        for line in entry.msgstr.splitlines():
-            output.append(line + "\n")
+        output.extend(line + "\n" for line in entry.msgstr.splitlines())
     return "".join(output)
