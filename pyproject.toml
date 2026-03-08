@@ -45,16 +45,11 @@ scripts.sphinx-lint = "sphinxlint.cli:main"
 
 [tool.hatch]
 version.source = "vcs"
-
-[tool.hatch.build.targets.wheel]
-packages = [ "sphinxlint" ]
-
-[tool.hatch.version.raw-options]
-local_scheme = "no-local-version"
+version.raw-options.local_scheme = "no-local-version"
+build.targets.wheel.packages = [ "sphinxlint" ]
 
 [tool.ruff]
 fix = true
-
 format.preview = true
 lint.select = [
   "E",      # pycodestyle errors
@@ -67,12 +62,11 @@ lint.select = [
   "YTT",    # flake8-2020
 ]
 lint.extend-ignore = [
-  "E203",  # Whitespace before ':'
-  "E221",  # Multiple spaces before operator
-  "E226",  # Missing whitespace around arithmetic operator
-  "E241",  # Multiple spaces after ','
-  "UP038", # makes code slower and more verbose
+  "E203", # Whitespace before ':'
+  "E221", # Multiple spaces before operator
+  "E226", # Missing whitespace around arithmetic operator
+  "E241", # Multiple spaces after ','
 ]
 
-[tool.pylint.variables]
-callbacks = [ "check_" ]
+[tool.pylint]
+variables.callbacks = [ "check_" ]
