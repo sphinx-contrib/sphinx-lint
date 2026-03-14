@@ -69,8 +69,8 @@ lint.extend-ignore = [
   "E226", # Missing whitespace around arithmetic operator
   "E241", # Multiple spaces after ','
 ]
-lint.per-file-ignores."sphinxlint/cli.py" = [ "PERF203" ] # `try`-`except` within a loop incurs performance overhead
-lint.per-file-ignores."tests/test_filter_out_literal.py" = [ "PERF402" ] # Use `list` or `list.copy` to copy a list
+lint.per-file-ignores."sphinxlint/cli.py" = [ "PERF203" ]  # `try`-`except` within a loop incurs performance overhead
+lint.per-file-ignores."tests/test_filter_out_literal.py" = [ "PERF402" ]  # Use `list` or `list.copy` to copy a list
 
 [tool.pylint]
 variables.callbacks = [ "check_" ]
