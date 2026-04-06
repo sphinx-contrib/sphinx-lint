@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.5
+    rev: v0.15.9
     hooks:
       - id: ruff-check
         args: ["--exit-non-zero-on-fix"]
@@ -20,17 +20,17 @@ repos:
         exclude: tests/fixtures/xfail/trailing-whitespaces.rst
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.37.0
+    rev: 0.37.1
     hooks:
       - id: check-github-workflows
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.11
+    rev: v1.7.12
     hooks:
       - id: actionlint
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.16.2
+    rev: v2.21.0
     hooks:
       - id: pyproject-fmt
         additional_dependencies: [tox]
