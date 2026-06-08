@@ -1,7 +1,8 @@
-from collections import Counter
 from dataclasses import dataclass
 from os.path import splitext
+from pathlib import Path
 
+from sphinxlint.checkers import Checker, CheckersOptions
 from sphinxlint.utils import PER_FILE_CACHES, hide_non_rst_blocks, po2rst
 
 
@@ -14,26 +15,20 @@ class LintError:
     msg: str
     checker_name: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.filename}:{self.line_no}: {self.msg} ({self.checker_name})"
 
 
-class CheckersOptions:
-    """Configuration options for checkers."""
-
-    max_line_length = 80
-
-    @classmethod
-    def from_argparse(cls, namespace):
-        options = cls()
-        options.max_line_length = namespace.max_line_length
-        return options
-
-
-def check_text(filename, text, checkers, options=None):
+def check_text(
+    filename: str,
+    text: str,
+    checkers: set[Checker],
+    options: CheckersOptions | None = None,
+) -> list[LintError]:
     if options is None:
         options = CheckersOptions()
     errors = []
+    lines_with_rst_only: tuple[str, ...] = ()
     ext = splitext(filename)[1]
     checkers = {checker for checker in checkers if ext in checker.suffixes}
     lines = tuple(text.splitlines(keepends=True))
@@ -49,21 +44,25 @@ def check_text(filename, text, checkers, options=None):
     return errors
 
 
-def check_file(filename, checkers, options: CheckersOptions = None):
+def check_file(
+    filepath: Path, checkers: set[Checker], options: CheckersOptions | None = None
+) -> list[LintError]:
+    if options is None:
+        options = CheckersOptions()
     try:
-        ext = splitext(filename)[1]
+        ext = splitext(filepath)[1]
         if not any(ext in checker.suffixes for checker in checkers):
-            return Counter()
+            return []
         try:
-            with open(filename, encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 text = f.read()
-            if filename.endswith(".po"):
+            if filepath.suffix == ".po":
                 text = po2rst(text)
         except OSError as err:
-            return [f"{filename}: cannot open: {err}"]
+            return [LintError(str(filepath), 0, f"{filepath}: cannot open: {err}", "")]
         except UnicodeDecodeError as err:
-            return [f"{filename}: cannot decode as UTF-8: {err}"]
-        return check_text(filename, text, checkers, options)
+            return [LintError(str(filepath), 0, f"cannot decode as UTF-8: {err}", "")]
+        return check_text(str(filepath), text, checkers, options)
     finally:
         for memoized_function in PER_FILE_CACHES:
             memoized_function.cache_clear()

@@ -1,26 +1,32 @@
 """Just a bunch of utility functions for sphinxlint."""
 
+from collections.abc import Callable
 from functools import lru_cache
+from typing import Any, Literal, ParamSpec, TypeVar, cast
 
 import regex as re
 from polib import pofile
 
 from sphinxlint import rst
 
-PER_FILE_CACHES = []
+PER_FILE_CACHES: list[Any] = []
 
 
-def per_file_cache(func):
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+def per_file_cache(func: Callable[P, T]) -> Callable[P, T]:
     memoized_func = lru_cache(maxsize=None)(func)
     PER_FILE_CACHES.append(memoized_func)
-    return memoized_func
+    return cast(Callable[P, T], memoized_func)
 
 
-def match_size(re_match):
+def match_size(re_match: re.Match[str]) -> int:
     return re_match.end() - re_match.start()
 
 
-def _clean_heuristic(paragraph, regex):
+def _clean_heuristic(paragraph: str, regex: re.Pattern[str]) -> str:
     """Remove the regex from the paragraph.
 
     The remove starts by most "credible" ones (here lies the dragons).
@@ -39,7 +45,7 @@ def _clean_heuristic(paragraph, regex):
 
 
 @per_file_cache
-def clean_paragraph(paragraph):
+def clean_paragraph(paragraph: str) -> str:
     """Removes all good constructs, so detectors can focus on bad ones.
 
     It removes all well formed inline literals, inline internal
@@ -55,7 +61,7 @@ def clean_paragraph(paragraph):
 
 
 @per_file_cache
-def escape2null(text):
+def escape2null(text: str) -> str:
     r"""Return a string with escape-backslashes converted to nulls.
 
     It ease telling appart escaping-backslashes and normal backslashes
@@ -89,12 +95,12 @@ def escape2null(text):
 
 
 @per_file_cache
-def paragraphs(lines):
+def paragraphs(lines: tuple[str, ...]) -> tuple[tuple[int, str], ...]:
     """Yield (paragraph_line_no, paragraph_text) pairs describing
     paragraphs of the given lines.
     """
     output = []
-    paragraph = []
+    paragraph: list[str] = []
     paragraph_lno = 1
     for lno, line in enumerate(lines, start=1):
         if line != "\n":
@@ -110,7 +116,7 @@ def paragraphs(lines):
     return tuple(output)
 
 
-def looks_like_glued(match):
+def looks_like_glued(match: re.Match[str]) -> bool:
     """Tell appart glued tags and tags with a missing colon.
 
     In one case we can have:
@@ -142,7 +148,7 @@ _PRODUCTION_LIST_DIRECTIVE_RE = re.compile(r"^ *.. productionlist::")
 _COMMENT_RE = re.compile(r"^ *\.\. ")
 
 
-def is_multiline_non_rst_block(line):
+def is_multiline_non_rst_block(line: str) -> bool:
     """Returns True if the next lines are an indented literal block."""
     if _START_OF_COMMENT_BLOCK_RE.search(line):
         return True
@@ -162,19 +168,28 @@ def is_multiline_non_rst_block(line):
 _ZERO_OR_MORE_SPACES_RE = re.compile(" *")
 
 
-def hide_non_rst_blocks(lines, hidden_block_cb=None):
+def measure_indentation(string: str) -> int:
+    spaces = _ZERO_OR_MORE_SPACES_RE.match(string)
+    assert spaces
+    return len(spaces[0])
+
+
+def hide_non_rst_blocks(
+    lines: tuple[str, ...],
+    hidden_block_cb: Callable[[int, str], None] | None = None,
+) -> tuple[str, ...]:
     """Filters out literal, comments, code blocks, ...
 
     The filter actually replace "removed" lines by empty lines, so the
     line numbering still make sense.
     """
     in_literal = None
-    excluded_lines = []
-    block_line_start = None
+    excluded_lines: list[str] = []
+    block_line_start = 0
     output = []
     for lineno, line in enumerate(lines, start=1):
         if in_literal is not None:
-            current_indentation = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
+            current_indentation = measure_indentation(line)
             if current_indentation > in_literal or line == "\n":
                 excluded_lines.append(line if line == "\n" else line[in_literal:])
                 line = "\n"  # Hiding line
@@ -184,7 +199,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
                     hidden_block_cb(block_line_start, "".join(excluded_lines))
                 excluded_lines = []
         if in_literal is None and is_multiline_non_rst_block(line):
-            in_literal = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
+            in_literal = measure_indentation(line)
             block_line_start = lineno
             assert not excluded_lines
             if type_of_explicit_markup(line) == "comment" and _COMMENT_RE.search(line):
@@ -203,7 +218,11 @@ _starts_with_substitution_definition = re.compile(r"\.\. \|[^\|]*\| ").match
 
 
 @per_file_cache
-def type_of_explicit_markup(line):
+def type_of_explicit_markup(
+    line: str,
+) -> Literal[
+    "directive", "footnote", "citation", "target", "substitution_definition", "comment"
+]:
     """Tell apart various explicit markup blocks."""
     line = line.lstrip()
     if _starts_with_directive_marker(line):
@@ -219,13 +238,13 @@ def type_of_explicit_markup(line):
     return "comment"
 
 
-def po2rst(text):
+def po2rst(text: str) -> str:
     """Extract msgstr entries from a po content, keeping linenos."""
-    output = []
+    output: list[str] = []
     po = pofile(text, encoding="UTF-8")
     for entry in po.translated_entries():
         # Don't check original msgid, assume it's checked directly.
-        while len(output) + 1 < entry.linenum:
+        while entry.linenum is not None and len(output) + 1 < entry.linenum:
             output.append("\n")
         for line in entry.msgstr.splitlines():
             output.append(line + "\n")
