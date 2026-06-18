@@ -16,6 +16,7 @@ class LintError:
     checker_name: str
 
     def __str__(self) -> str:
+        assert self.checker_name
         return f"{self.filename}:{self.line_no}: {self.msg} ({self.checker_name})"
 
 
@@ -59,9 +60,17 @@ def check_file(
             if filepath.suffix == ".po":
                 text = po2rst(text)
         except OSError as err:
-            return [LintError(str(filepath), 0, f"{filepath}: cannot open: {err}", "")]
+            return [
+                LintError(
+                    str(filepath), 0, f"{filepath}: cannot open: {err}", "check_file"
+                )
+            ]
         except UnicodeDecodeError as err:
-            return [LintError(str(filepath), 0, f"cannot decode as UTF-8: {err}", "")]
+            return [
+                LintError(
+                    str(filepath), 0, f"cannot decode as UTF-8: {err}", "check_file"
+                )
+            ]
         return check_text(str(filepath), text, checkers, options)
     finally:
         for memoized_function in PER_FILE_CACHES:
