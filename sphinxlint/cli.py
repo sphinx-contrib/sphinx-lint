@@ -258,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     for path in args.paths:
-        if not os.path.exists(path):
+        if not path.exists():
             print(f"Error: path {path} does not exist", file=sys.stderr)
             return 2
 
