@@ -190,7 +190,8 @@ def walk(path: Path, ignore_list: list[str]) -> Iterator[Path]:
             return
         yield path
         return
-    for root, dirs, files in path.walk():
+    for rootstr, dirs, files in os.walk(path):
+        root = Path(rootstr)
         # ignore subdirs in ignore list
         if any(ignore in str(root) for ignore in ignore_list):
             del dirs[:]
