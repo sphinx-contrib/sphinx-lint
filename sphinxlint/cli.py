@@ -115,7 +115,6 @@ def parse_args(
         "--ignore",
         action="append",
         help="ignore subdir or file path",
-        type=str,
         default=[],
     )
     parser.add_argument(
