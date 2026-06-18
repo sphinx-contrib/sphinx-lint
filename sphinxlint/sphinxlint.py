@@ -60,11 +60,7 @@ def check_file(
             if filepath.suffix == ".po":
                 text = po2rst(text)
         except OSError as err:
-            return [
-                LintError(
-                    str(filepath), 0, f"{filepath}: cannot open: {err}", "check_file"
-                )
-            ]
+            return [LintError(str(filepath), 0, f"cannot open: {err}", "check_file")]
         except UnicodeDecodeError as err:
             return [
                 LintError(
