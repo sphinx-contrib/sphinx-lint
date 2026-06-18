@@ -198,7 +198,7 @@ def walk(path: Path, ignore_list: list[str]) -> Iterator[Path]:
             continue
         for file in files:
             # ignore files in ignore list
-            if any(ignore in file for ignore in ignore_list):
+            if any(ignore in str(root / file) for ignore in ignore_list):
                 continue
             yield root / file
 
