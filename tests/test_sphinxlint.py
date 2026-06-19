@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -31,6 +32,33 @@ def test_sphinxlint_shall_trigger_false_positive(file, capsys):
     assert out != "No problems found.\n"
     assert err != ""
     assert has_errors
+
+
+def test_sphinxlint_output(fixture_dir, capsys):
+    """This test is here to spot unwanted changes in the display of errors."""
+    result = main(["sphinxlint.py", str(fixture_dir / "hierarchy" / "outer.rst")])
+    assert result == 1
+    out, err = capsys.readouterr()
+    assert (
+        "hierarchy/outer.rst:5: "
+        "role missing opening tag colon ( attr:`). (missing-space-before-role)\n" in err
+    )
+    assert not out
+
+
+def test_sphinxlint_cannot_read_file(tmp_path, capsys):
+    file = tmp_path / "file.rst"
+    file.touch()
+    file.chmod(0)
+    result = main(["sphinxlint.py", str(file)])
+    assert result == 1
+    out, err = capsys.readouterr()
+    assert re.match(
+        r".*file.rst:0: cannot open: \[Errno 13\] Permission denied: "
+        r"'.*file.rst' \(check_file\)",
+        err,
+    )
+    assert not out
 
 
 def gather_xfail():
