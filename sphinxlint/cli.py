@@ -104,6 +104,13 @@ def parse_args(
                 return os.cpu_count() or 1
             return max(int(values), 1)
 
+    def string_with_no_backslash(user_input):
+        """To convert Windows-style paths to Unix style path.
+
+        Used by --ignore so internall we only work with unix-like paths.
+        """
+        return user_input.replace("\\", "/")
+
     parser.add_argument(
         "-v",
         "--verbose",
@@ -115,6 +122,7 @@ def parse_args(
         "--ignore",
         action="append",
         help="ignore subdir or file path",
+        type=string_with_no_backslash,
         default=[],
     )
     parser.add_argument(
@@ -180,6 +188,14 @@ def parse_args(
     return enabled_checkers, args
 
 
+def is_ignored(path: Path, ignore_list: list[str]) -> bool:
+    """Return True if the path is considered ignored according to the ignore list.
+
+    Ignore list cannot contain backslashes, only forward slashes.
+    """
+    return any(ignore in str(path).replace("\\", "/") for ignore in ignore_list)
+
+
 def walk(path: Path, ignore_list: list[str]) -> Iterator[Path]:
     """Wrapper around os.walk with an ignore list.
 
@@ -193,12 +209,12 @@ def walk(path: Path, ignore_list: list[str]) -> Iterator[Path]:
     for rootstr, dirs, files in os.walk(path):
         root = Path(rootstr)
         # ignore subdirs in ignore list
-        if any(ignore in str(root) for ignore in ignore_list):
+        if is_ignored(root, ignore_list):
             del dirs[:]
             continue
         for file in files:
             # ignore files in ignore list
-            if any(ignore in str(root / file) for ignore in ignore_list):
+            if is_ignored(root / file, ignore_list):
                 continue
             yield root / file
 
