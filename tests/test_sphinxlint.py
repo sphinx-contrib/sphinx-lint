@@ -1,4 +1,5 @@
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -39,13 +40,17 @@ def test_sphinxlint_output(fixture_dir, capsys):
     result = main(["sphinxlint.py", str(fixture_dir / "hierarchy" / "outer.rst")])
     assert result == 1
     out, err = capsys.readouterr()
-    assert (
-        "hierarchy/outer.rst:5: "
-        "role missing opening tag colon ( attr:`). (missing-space-before-role)\n" in err
+    assert re.search(
+        r"hierarchy[/\\]outer.rst:5: "
+        r"role missing opening tag colon \( attr:`\). \(missing-space-before-role\)\n",
+        err,
     )
     assert not out
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="chmod can only set read-only on Windows"
+)
 def test_sphinxlint_cannot_read_file(tmp_path, capsys):
     file = tmp_path / "file.rst"
     file.touch()
