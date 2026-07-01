@@ -157,7 +157,9 @@ UNICODE_ALLOWED_AFTER_INLINE_MARKUP = r"\p{Pe}\p{Pi}\p{Pf}\p{Pd}\p{Po}"
 
 
 @cache
-def inline_markup_gen(start_string, end_string, extra_allowed_before=""):
+def inline_markup_gen(
+    start_string: str, end_string: str, extra_allowed_before: str = ""
+) -> re.Pattern[str]:
     """Generate a regex matching an inline markup.
 
     inline_markup_gen('**', '**') geneates a regex matching strong

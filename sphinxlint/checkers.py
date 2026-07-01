@@ -1,4 +1,8 @@
+import argparse
 import os
+from collections.abc import Callable, Iterator
+from dataclasses import dataclass
+from typing import TypeVar
 
 import regex as re
 
@@ -12,28 +16,75 @@ from sphinxlint.utils import (
     paragraphs,
 )
 
-all_checkers = {}
+Self = TypeVar("Self", bound="CheckersOptions")
 
 
-def checker(*suffixes, **kwds):
+class CheckersOptions:
+    """Configuration options for checkers."""
+
+    max_line_length = 80
+
+    @classmethod
+    def from_argparse(cls: type[Self], namespace: argparse.Namespace) -> Self:
+        options = cls()
+        options.max_line_length = namespace.max_line_length
+        return options
+
+
+CheckerFunction = Callable[
+    [str, tuple[str, ...], CheckersOptions], Iterator[tuple[int, str]]
+]
+Error = tuple[int, str]  # lineno, message
+
+
+@dataclass(frozen=True)
+class Checker:
+    """A function that can check the files with the given suffixes."""
+
+    name: str
+    fct: CheckerFunction
+    suffixes: tuple[str, ...]
+    enabled: bool = True
+    rst_only: bool = True
+
+    @property
+    def doc(self) -> str:
+        return self.fct.__doc__ or ""
+
+    def __call__(
+        self, file: str, lines: tuple[str, ...], options: CheckersOptions
+    ) -> Iterator[Error]:
+        return self.fct(file, lines, options)
+
+
+all_checkers: dict[str, Checker] = {}
+
+
+def checker(
+    *suffixes: str, enabled: bool = True, rst_only: bool = True
+) -> Callable[[CheckerFunction], CheckerFunction]:
     """Decorator to register a function as a checker."""
-    checker_props = {"enabled": True, "rst_only": True}
 
-    def deco(func):
+    def deco(func: CheckerFunction) -> CheckerFunction:
         if not func.__name__.startswith("check_"):
             raise ValueError("Checker names should start with 'check_'.")
-        for prop, default_value in checker_props.items():
-            setattr(func, prop, kwds.get(prop, default_value))
-        func.suffixes = suffixes
-        func.name = func.__name__[len("check_") :].replace("_", "-")
-        all_checkers[func.name] = func
+        checker_instance = Checker(
+            func.__name__[len("check_") :].replace("_", "-"),
+            func,
+            suffixes,
+            enabled=enabled,
+            rst_only=rst_only,
+        )
+        all_checkers[checker_instance.name] = checker_instance
         return func
 
     return deco
 
 
 @checker(".py", rst_only=False)
-def check_python_syntax(file, lines, options=None):
+def check_python_syntax(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search invalid syntax in Python examples."""
     code = "".join(lines)
     if "\r" in code:
@@ -43,11 +94,13 @@ def check_python_syntax(file, lines, options=None):
     try:
         compile(code, file, "exec")
     except SyntaxError as err:
-        yield err.lineno, f"not compilable: {err}"
+        yield err.lineno or 1, f"not compilable: {err}"
 
 
 @checker(".rst", ".po")
-def check_missing_backtick_after_role(file, lines, options=None):
+def check_missing_backtick_after_role(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for roles missing their closing backticks.
 
     Bad:  :fct:`foo
@@ -69,7 +122,9 @@ _END_STRING_SUFFIX_RE = re.compile(rst.END_STRING_SUFFIX)
 
 
 @checker(".rst", ".po")
-def check_missing_space_after_literal(file, lines, options=None):
+def check_missing_space_after_literal(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     r"""Search for inline literals immediately followed by a character.
 
     Bad:  ``items``s
@@ -93,7 +148,9 @@ _LONE_DOUBLE_BACKTICK_RE = re.compile("(?<!`)``(?!`)")
 
 
 @checker(".rst", ".po")
-def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
+def check_unbalanced_inline_literals_delimiters(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     r"""Search for unbalanced inline literals delimiters.
 
     Bad:  ``hello`` world``
@@ -116,7 +173,9 @@ _starts_with_role_tag = re.compile("^" + rst.ROLE_TAG).search
 
 
 @checker(".rst", ".po", enabled=False)
-def check_default_role(file, lines, options=None):
+def check_default_role(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for default roles (but they are allowed in many projects).
 
     Bad:  `print`
@@ -152,7 +211,9 @@ def check_default_role(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_directive_with_three_dots(file, lines, options=None):
+def check_directive_with_three_dots(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for directives with three dots instead of two.
 
     Bad:  ... versionchanged:: 3.6
@@ -164,7 +225,9 @@ def check_directive_with_three_dots(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_directive_missing_colons(file, lines, options=None):
+def check_directive_missing_colons(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for directive wrongly typed as comments.
 
     Bad:  .. versionchanged 3.6.
@@ -191,7 +254,9 @@ _SUSPICIOUS_ROLE = re.compile(
 
 
 @checker(".rst", ".po")
-def check_missing_space_after_role(file, lines, options=None):
+def check_missing_space_after_role(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     r"""Search for roles immediately followed by a character.
 
     Bad:  :exc:`Exception`s.
@@ -210,7 +275,9 @@ def check_missing_space_after_role(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_role_without_backticks(file, lines, options=None):
+def check_role_without_backticks(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search roles without backticks.
 
     Bad:  :func:pdb.main
@@ -222,7 +289,9 @@ def check_role_without_backticks(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_backtick_before_role(file, lines, options=None):
+def check_backtick_before_role(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for roles preceded by a backtick.
 
     Bad: `:fct:`sum`
@@ -236,7 +305,9 @@ def check_backtick_before_role(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_missing_space_in_hyperlink(file, lines, options=None):
+def check_missing_space_in_hyperlink(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for hyperlinks missing a space.
 
     Bad:  `Link text<https://example.com>`_
@@ -251,7 +322,9 @@ def check_missing_space_in_hyperlink(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_missing_underscore_after_hyperlink(file, lines, options=None):
+def check_missing_underscore_after_hyperlink(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for hyperlinks with incorrect underscore usage after closing backtick.
 
     For regular hyperlinks:
@@ -282,7 +355,9 @@ def check_missing_underscore_after_hyperlink(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_role_with_double_backticks(file, lines, options=None):
+def check_role_with_double_backticks(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for roles with double backticks.
 
     Bad:  :fct:``sum``
@@ -324,7 +399,9 @@ def check_role_with_double_backticks(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_role_with_extra_backtick(filename, lines, options):
+def check_role_with_extra_backtick(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for extra backtick in roles.
 
     Bad:  :func:`foo``
@@ -337,7 +414,9 @@ def check_role_with_extra_backtick(filename, lines, options):
 
 
 @checker(".rst", ".po")
-def check_missing_space_before_role(file, lines, options=None):
+def check_missing_space_before_role(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for missing spaces before roles.
 
     Bad:  the:fct:`sum`, issue:`123`, c:func:`foo`
@@ -362,7 +441,9 @@ def check_missing_space_before_role(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_missing_space_before_default_role(file, lines, options=None):
+def check_missing_space_before_default_role(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for missing spaces before default role.
 
     Bad:  the`sum`
@@ -388,7 +469,9 @@ _HYPERLINK_REFERENCE_RE = re.compile(r"\S* <https?://[^ ]+>`_")
 
 
 @checker(".rst", ".po")
-def check_hyperlink_reference_missing_backtick(file, lines, options=None):
+def check_hyperlink_reference_missing_backtick(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for missing backticks in front of hyperlink references.
 
     Bad:  Misc/NEWS <https://github.com/python/cpython/blob/v3.2.6/Misc/NEWS>`_
@@ -409,7 +492,9 @@ def check_hyperlink_reference_missing_backtick(file, lines, options=None):
 
 
 @checker(".rst", ".po")
-def check_missing_colon_in_role(file, lines, options=None):
+def check_missing_colon_in_role(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Search for missing colons in roles.
 
     Bad:  :issue`123`
@@ -421,7 +506,9 @@ def check_missing_colon_in_role(file, lines, options=None):
 
 
 @checker(".py", ".rst", ".po", rst_only=False)
-def check_carriage_return(file, lines, options=None):
+def check_carriage_return(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     r"""Check for carriage returns (\r) in lines."""
     for lno, line in enumerate(lines):
         if "\r" in line:
@@ -429,7 +516,9 @@ def check_carriage_return(file, lines, options=None):
 
 
 @checker(".py", ".rst", ".po", rst_only=False)
-def check_horizontal_tab(file, lines, options=None):
+def check_horizontal_tab(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     r"""Check for horizontal tabs (\t) in lines."""
     for lno, line in enumerate(lines):
         if "\t" in line:
@@ -437,7 +526,9 @@ def check_horizontal_tab(file, lines, options=None):
 
 
 @checker(".py", ".rst", ".po", rst_only=False)
-def check_trailing_whitespace(file, lines, options=None):
+def check_trailing_whitespace(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for trailing whitespaces at end of lines."""
     for lno, line in enumerate(lines):
         stripped_line = line.rstrip("\n")
@@ -446,7 +537,9 @@ def check_trailing_whitespace(file, lines, options=None):
 
 
 @checker(".py", ".rst", ".po", rst_only=False)
-def check_missing_final_newline(file, lines, options=None):
+def check_missing_final_newline(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check that the last line of the file ends with a newline."""
     if lines and not lines[-1].endswith("\n"):
         yield len(lines), "No newline at end of file."
@@ -460,7 +553,9 @@ _is_very_long_inline_link = re.compile(r"^\s*<.*(>`_).?$").match
 
 
 @checker(".rst", ".po", enabled=False, rst_only=True)
-def check_line_too_long(file, lines, options=None):
+def check_line_too_long(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for line length; this checker is not run by default."""
     for lno, line in enumerate(lines):
         # Beware, in `line` we have the trailing newline.
@@ -481,7 +576,9 @@ def check_line_too_long(file, lines, options=None):
 
 
 @checker(".html", enabled=False, rst_only=False)
-def check_leaked_markup(file, lines, options=None):
+def check_leaked_markup(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check HTML files for leaked reST markup.
 
     This only works if the HTML files have been built.
@@ -492,7 +589,9 @@ def check_leaked_markup(file, lines, options=None):
 
 
 @checker(".rst", ".po", enabled=False)
-def check_triple_backticks(file, lines, options=None):
+def check_triple_backticks(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for triple backticks, like ```Point``` (but it's a valid syntax).
 
     Bad: ```Point```
@@ -503,7 +602,7 @@ def check_triple_backticks(file, lines, options=None):
     syntax, but it's really uncommon.
     """
     for lno, line in enumerate(lines):
-        for match in rst.TRIPLE_BACKTICKS_RE.finditer(line):
+        for _match in rst.TRIPLE_BACKTICKS_RE.finditer(line):
             yield lno + 1, "There's no rst syntax using triple backticks"
 
 
@@ -511,7 +610,9 @@ _has_bad_dedent = re.compile(" [^ ].*::$").match
 
 
 @checker(".rst", ".po", rst_only=False)
-def check_bad_dedent(file, lines, options=None):
+def check_bad_dedent(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for mis-alignment in indentation in code blocks.
 
     |A 5 lines block::
@@ -525,7 +626,7 @@ def check_bad_dedent(file, lines, options=None):
 
     errors = []
 
-    def check_block(block_lineno, block):
+    def check_block(block_lineno: int, block: str) -> None:
         for lineno, line in enumerate(block.splitlines()):
             if _has_bad_dedent(line):
                 errors.append((block_lineno + lineno, "Bad dedent in block"))
@@ -538,7 +639,9 @@ _has_dangling_hyphen = re.compile(r".*[a-z]-$").match
 
 
 @checker(".rst", rst_only=True)
-def check_dangling_hyphen(file, lines, options):
+def check_dangling_hyphen(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for lines ending in a hyphen."""
     for lno, line in enumerate(lines):
         stripped_line = line.rstrip("\n")
@@ -547,7 +650,9 @@ def check_dangling_hyphen(file, lines, options):
 
 
 @checker(".rst", ".po", rst_only=False, enabled=True)
-def check_unnecessary_parentheses(filename, lines, options):
+def check_unnecessary_parentheses(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for unnecessary parentheses in :func: and :meth: roles.
 
     Bad:  :func:`test()`
@@ -559,7 +664,9 @@ def check_unnecessary_parentheses(filename, lines, options):
 
 
 @checker(".rst", ".po")
-def check_exclamation_and_tilde(file, lines, options):
+def check_exclamation_and_tilde(
+    file: str, lines: tuple[str, ...], options: CheckersOptions
+) -> Iterator[Error]:
     """Check for roles that start with an exclamation mark and tilde (`!~`).
 
     Bad:  :meth:`!~list.pop`

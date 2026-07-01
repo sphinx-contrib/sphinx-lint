@@ -3,11 +3,16 @@ import enum
 import multiprocessing
 import os
 import sys
+from collections.abc import Iterable, Iterator, Reversible, Sequence
 from itertools import chain, starmap
+from pathlib import Path
+from typing import Any
 
 from sphinxlint import __version__, check_file
-from sphinxlint.checkers import all_checkers
-from sphinxlint.sphinxlint import CheckersOptions
+from sphinxlint.checkers import Checker, CheckersOptions, all_checkers
+from sphinxlint.sphinxlint import LintError
+
+Job = tuple[Path, set[Checker], CheckersOptions | None]
 
 
 class SortField(enum.Enum):
@@ -18,37 +23,59 @@ class SortField(enum.Enum):
     ERROR_TYPE = 2
 
     @staticmethod
-    def as_supported_options():
+    def as_supported_options() -> str:
         return ",".join(field.name.lower() for field in SortField)
 
 
-def parse_args(argv=None):
+def parse_args(
+    argv: list[str] | None = None,
+) -> tuple[set[Checker], argparse.Namespace]:
     """Parse command line argument."""
     if argv is None:
         argv = sys.argv
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.color = True
 
     enabled_checkers_names = {
         checker.name for checker in all_checkers.values() if checker.enabled
     }
 
     class EnableAction(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string=None):
+        def __call__(
+            self,
+            parser: argparse.ArgumentParser,
+            namespace: argparse.Namespace,
+            values: str | Sequence[Any] | None,
+            option_string: str | None = None,
+        ) -> None:
+            assert isinstance(values, str)
             if values == "all":
                 enabled_checkers_names.update(set(all_checkers.keys()))
             else:
                 enabled_checkers_names.update(values.split(","))
 
     class DisableAction(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string=None):
+        def __call__(
+            self,
+            parser: argparse.ArgumentParser,
+            namespace: argparse.Namespace,
+            values: str | Sequence[Any] | None,
+            option_string: str | None = None,
+        ) -> None:
+            assert isinstance(values, str)
             if values == "all":
                 enabled_checkers_names.clear()
             else:
                 enabled_checkers_names.difference_update(values.split(","))
 
     class StoreSortFieldAction(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string=None):
+        def __call__(
+            self,
+            parser: argparse.ArgumentParser,
+            namespace: argparse.Namespace,
+            values: str | Sequence[Any] | None,
+            option_string: str | None = None,
+        ) -> None:
+            assert isinstance(values, str)
             sort_fields = []
             for field_name in values.split(","):
                 try:
@@ -61,14 +88,28 @@ def parse_args(argv=None):
             setattr(namespace, self.dest, sort_fields)
 
     class StoreNumJobsAction(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string=None):
+        def __call__(
+            self,
+            parser: argparse.ArgumentParser,
+            namespace: argparse.Namespace,
+            values: str | Sequence[Any] | None,
+            option_string: str | None = None,
+        ) -> None:
+            assert isinstance(values, str)
             setattr(namespace, self.dest, self.job_count(values))
 
         @staticmethod
-        def job_count(values):
+        def job_count(values: str) -> int:
             if values == "auto":
-                return os.cpu_count()
+                return os.cpu_count() or 1
             return max(int(values), 1)
+
+    def string_with_no_backslash(user_input):
+        """To convert Windows-style paths to Unix style path.
+
+        Used by --ignore so internall we only work with unix-like paths.
+        """
+        return user_input.replace("\\", "/")
 
     parser.add_argument(
         "-v",
@@ -81,6 +122,7 @@ def parse_args(argv=None):
         "--ignore",
         action="append",
         help="ignore subdir or file path",
+        type=string_with_no_backslash,
         default=[],
     )
     parser.add_argument(
@@ -136,7 +178,7 @@ def parse_args(argv=None):
         "-V", "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
-    parser.add_argument("paths", default=".", nargs="*")
+    parser.add_argument("paths", default=[Path(".")], nargs="*", type=Path)
     args = parser.parse_args(argv[1:])
     try:
         enabled_checkers = {all_checkers[name] for name in enabled_checkers_names}
@@ -146,43 +188,53 @@ def parse_args(argv=None):
     return enabled_checkers, args
 
 
-def walk(path, ignore_list):
+def is_ignored(path: Path, ignore_list: list[str]) -> bool:
+    """Return True if the path is considered ignored according to the ignore list.
+
+    Ignore list cannot contain backslashes, only forward slashes.
+    """
+    return any(ignore in str(path).replace("\\", "/") for ignore in ignore_list)
+
+
+def walk(path: Path, ignore_list: list[str]) -> Iterator[Path]:
     """Wrapper around os.walk with an ignore list.
 
     It also allows giving a file, thus yielding just that file.
     """
-    if os.path.isfile(path):
-        if path in ignore_list:
+    if path.is_file():
+        if str(path) in ignore_list:
             return
-        yield path if path[:2] != "./" else path[2:]
+        yield path
         return
-    for root, dirs, files in os.walk(path):
+    for rootstr, dirs, files in os.walk(path):
+        root = Path(rootstr)
         # ignore subdirs in ignore list
-        if any(ignore in root for ignore in ignore_list):
+        if is_ignored(root, ignore_list):
             del dirs[:]
             continue
         for file in files:
-            file = os.path.join(root, file)
             # ignore files in ignore list
-            if any(ignore in file for ignore in ignore_list):
+            if is_ignored(root / file, ignore_list):
                 continue
-            yield file if file[:2] != "./" else file[2:]
+            yield root / file
 
 
-def _check_file(todo):
+def _check_file(todo: Job) -> list[LintError]:
     """Wrapper to call check_file with arguments given by
     multiprocessing.imap_unordered."""
     return check_file(*todo)
 
 
-def sort_errors(results, sorted_by):
+def sort_errors(
+    results: Iterable[list[LintError]], sorted_by: Reversible[SortField]
+) -> Iterator[LintError]:
     """Flattens and potentially sorts errors based on user prefernces"""
     if not sorted_by:
-        for results in results:
-            yield from results
+        for errors in results:
+            yield from errors
         return
     errors = list(error for errors in results for error in errors)
-    # sorting is stable in python, so we can sort in reverse order to get the
+    # sorting is stable in Python, so we can sort in reverse order to get the
     # ordering specified by the user
     for sort_field in reversed(sorted_by):
         if sort_field == SortField.ERROR_TYPE:
@@ -194,7 +246,7 @@ def sort_errors(results, sorted_by):
     yield from errors
 
 
-def print_errors(errors):
+def print_errors(errors: Iterable[LintError]) -> int:
     """Print errors (or a message if nothing is to be printed)."""
     qty = 0
     for error in errors:
@@ -205,7 +257,7 @@ def print_errors(errors):
     return qty
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     enabled_checkers, args = parse_args(argv)
     options = CheckersOptions.from_argparse(args)
     if args.list:
@@ -215,15 +267,15 @@ def main(argv=None):
         print(f"{len(enabled_checkers)} checkers selected:")
         for check in sorted(enabled_checkers, key=lambda fct: fct.name):
             if args.verbose:
-                print(f"- {check.name}: {check.__doc__}")
+                print(f"- {check.name}: {check.doc}")
             else:
-                print(f"- {check.name}: {check.__doc__.splitlines()[0]}")
+                print(f"- {check.name}: {check.doc.splitlines()[0]}")
         if not args.verbose:
             print("\n(Use `--list --verbose` to know more about each check)")
         return 0
 
     for path in args.paths:
-        if not os.path.exists(path):
+        if not path.exists():
             print(f"Error: path {path} does not exist", file=sys.stderr)
             return 2
 
