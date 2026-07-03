@@ -220,7 +220,8 @@ def main(argv=None):
             if not checkers:
                 print(f"No {status} checkers.")
                 continue
-            print(f"{len(checkers)} {status} checkers:")
+            s = "" if len(checkers) == 1 else "s"
+            print(f"{len(checkers)} {status} checker{s}:")
             for check in sorted(checkers, key=attrgetter("name")):
                 if args.verbose:
                     print(f"- {check.name}: {check.__doc__}")
