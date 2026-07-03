@@ -1,7 +1,7 @@
 .\"                                      Hey, EMACS: -*- nroff -*-
 .\" (C) Copyright 2025 Julien Palard <julien@palard.fr>
 .\"
-.TH sphinx-lint 1 "November 16 2025"
+.TH sphinx-lint 1 "July 3 2026"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -54,8 +54,9 @@ For example, \fB--enable all --disable trailing-whitespace\fP enables all
 checks except the specified one.
 .TP
 .B --list
-List enabled checkers and exit. Useful to see which checkers would be
-used with a given set of \fB--enable\fP and \fB--disable\fP options.
+List all available checkers, showing which are enabled, and exit. Useful to
+see how a given set of \fB--enable\fP and \fB--disable\fP options changes the
+selected checkers.
 .TP
 .B --max-line-length MAX_LINE_LENGTH
 Maximum number of characters allowed on a single line.

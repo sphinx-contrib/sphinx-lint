@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import sys
 from itertools import chain, starmap
+from operator import attrgetter
 
 from sphinxlint import __version__, check_file
 from sphinxlint.checkers import all_checkers
@@ -105,9 +106,9 @@ def parse_args(argv=None):
     parser.add_argument(
         "--list",
         action="store_true",
-        help="List enabled checkers and exit. "
-        "Can be used to see which checkers would be used with a given set of "
-        "--enable and --disable options.",
+        help="List available checkers, showing which are enabled, and exit. "
+        "Can be used to see how a given set of --enable and --disable options "
+        "changes the selected checkers.",
     )
     parser.add_argument(
         "--max-line-length",
@@ -209,15 +210,23 @@ def main(argv=None):
     enabled_checkers, args = parse_args(argv)
     options = CheckersOptions.from_argparse(args)
     if args.list:
-        if not enabled_checkers:
-            print("No checkers selected.")
-            return 0
-        print(f"{len(enabled_checkers)} checkers selected:")
-        for check in sorted(enabled_checkers, key=lambda fct: fct.name):
-            if args.verbose:
-                print(f"- {check.name}: {check.__doc__}")
-            else:
-                print(f"- {check.name}: {check.__doc__.splitlines()[0]}")
+        checker_groups = (
+            ("enabled", enabled_checkers),
+            ("disabled", set(all_checkers.values()) - enabled_checkers),
+        )
+        for status, checkers in checker_groups:
+            if status == "disabled":
+                print()
+            if not checkers:
+                print(f"No {status} checkers.")
+                continue
+            s = "" if len(checkers) == 1 else "s"
+            print(f"{len(checkers)} {status} checker{s}:")
+            for check in sorted(checkers, key=attrgetter("name")):
+                if args.verbose:
+                    print(f"- {check.name}: {check.__doc__}")
+                else:
+                    print(f"- {check.name}: {check.__doc__.splitlines()[0]}")
         if not args.verbose:
             print("\n(Use `--list --verbose` to know more about each check)")
         return 0

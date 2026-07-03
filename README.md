@@ -44,6 +44,38 @@ We recommend using a configuration like this:
 ```
 
 
+### Selecting checks
+
+Most checks are enabled by default. The following checks are available but disabled by default:
+
+| Check | Description |
+| --- | --- |
+| `default-role` | Reports default roles, such as `` `print` ``, which many projects allow. |
+| `leaked-markup` | Checks built HTML files for leaked reStructuredText markup. |
+| `line-too-long` | Reports lines longer than 80 characters by default; use `--max-line-length` to change the limit. |
+| `triple-backticks` | Reports triple backticks, such as `` ```text``` ``, which are valid but uncommon reStructuredText. |
+
+Use `--enable` to opt into one or more checks:
+
+```sh
+sphinx-lint --enable=default-role docs
+sphinx-lint --enable=default-role,line-too-long docs
+sphinx-lint --enable=all docs
+```
+
+In a pre-commit configuration, pass the option using `args`:
+
+```yaml
+  - repo: https://github.com/sphinx-contrib/sphinx-lint
+    rev: LATEST_SPHINXLINT_RELEASE_TAG
+    hooks:
+      - id: sphinx-lint
+        args: [--enable=default-role]
+```
+
+Run `sphinx-lint --list` to see every available check and whether it is enabled. You can combine `--list` with `--enable` and `--disable` to preview the resulting selection.
+
+
 ## Known issues
 
 Currently Sphinx Lint can't work with tables, there's no understanding
