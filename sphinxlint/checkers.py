@@ -384,12 +384,21 @@ def check_missing_space_before_default_role(file, lines, options=None):
             )
 
 
+_ANONYMOUS_HYPERLINK_REFERENCE_MISSING_SPACE_RE = re.compile(
+    r"`[^`]+ <https?://[^`]+>`__(?=\w)"
+)
+
 _HYPERLINK_REFERENCE_RE = re.compile(r"\S* <https?://[^ ]+>`_")
 
 
 @checker(".rst", ".po")
-def check_hyperlink_reference_missing_backtick(file, lines, options=None):
-    """Search for missing backticks in front of hyperlink references.
+def check_hyperlink_reference(file, lines, options=None):
+    """Search for hyperlink reference syntax errors.
+
+    Examples include:
+
+    - missing opening backtick
+    - missing space after anonymous hyperlink references
 
     Bad:  Misc/NEWS <https://github.com/python/cpython/blob/v3.2.6/Misc/NEWS>`_
     Good: `Misc/NEWS <https://github.com/python/cpython/blob/v3.2.6/Misc/NEWS>`_
@@ -399,9 +408,28 @@ def check_hyperlink_reference_missing_backtick(file, lines, options=None):
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
         paragraph = rst.INTERPRETED_TEXT_RE.sub("", paragraph)
+
+        for (
+            hyperlink_reference
+        ) in _ANONYMOUS_HYPERLINK_REFERENCE_MISSING_SPACE_RE.finditer(paragraph):
+            error_offset = paragraph[: hyperlink_reference.start()].count("\n")
+            context = hyperlink_reference.group(0)
+            yield (
+                paragraph_lno + error_offset,
+                f"missing space after hyperlink reference: {context!r}.",
+            )
+
         for hyperlink_reference in _HYPERLINK_REFERENCE_RE.finditer(paragraph):
             error_offset = paragraph[: hyperlink_reference.start()].count("\n")
             context = hyperlink_reference.group(0)
+
+            if (
+                context.endswith("`_")
+                and paragraph[hyperlink_reference.end() : hyperlink_reference.end() + 1]
+                == "_"
+            ):
+                continue
+
             yield (
                 paragraph_lno + error_offset,
                 f"missing backtick before hyperlink reference: {context!r}.",
