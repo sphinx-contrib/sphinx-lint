@@ -383,6 +383,7 @@ def check_missing_space_before_default_role(file, lines, options=None):
                 f"missing space before default role: {context!r}.",
             )
 
+
 _ANONYMOUS_HYPERLINK_REFERENCE_MISSING_SPACE_RE = re.compile(
     r"`[^`]+ <https?://[^`]+>`__(?=\w)"
 )
@@ -409,12 +410,13 @@ def check_hyperlink_reference(file, lines, options=None):
         paragraph = rst.INTERPRETED_TEXT_RE.sub("", paragraph)
         anonymous_matches = []
 
-        for hyperlink_reference in _ANONYMOUS_HYPERLINK_REFERENCE_MISSING_SPACE_RE.finditer(
-            paragraph
-        ):
-            anonymous_matches.append(
-                (hyperlink_reference.start(), hyperlink_reference.end())
-            )
+        for (
+            hyperlink_reference
+        ) in _ANONYMOUS_HYPERLINK_REFERENCE_MISSING_SPACE_RE.finditer(paragraph):
+            anonymous_matches.append((
+                hyperlink_reference.start(),
+                hyperlink_reference.end(),
+            ))
 
             error_offset = paragraph[: hyperlink_reference.start()].count("\n")
             context = hyperlink_reference.group(0)
