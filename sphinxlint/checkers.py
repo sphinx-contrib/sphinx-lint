@@ -385,7 +385,7 @@ def check_missing_space_before_default_role(file, lines, options=None):
 
 
 _ANONYMOUS_HYPERLINK_REFERENCE_MISSING_SPACE_RE = re.compile(
-    r"`[^`]+ <https?://[^`]+>`__(?=\w)"
+    r"`[^`]+ <https?://[^`]+>`__"
 )
 
 _HYPERLINK_REFERENCE_RE = re.compile(r"\S* <https?://[^ ]+>`_")
@@ -413,6 +413,13 @@ def check_hyperlink_reference(file, lines, options=None):
         for (
             hyperlink_reference
         ) in _ANONYMOUS_HYPERLINK_REFERENCE_MISSING_SPACE_RE.finditer(paragraph):
+            next_char = paragraph[
+                hyperlink_reference.end() : hyperlink_reference.end() + 1
+            ]
+
+            if _END_STRING_SUFFIX_RE.match(next_char):
+                continue
+
             anonymous_matches.append((
                 hyperlink_reference.start(),
                 hyperlink_reference.end(),
