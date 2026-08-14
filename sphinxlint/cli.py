@@ -48,6 +48,12 @@ def parse_args(argv=None):
             else:
                 enabled_checkers_names.difference_update(values.split(","))
 
+    class ExtendIgnoreAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            ignored = getattr(namespace, self.dest, None) or []
+            ignored.extend(value for value in values.split(",") if value)
+            setattr(namespace, self.dest, ignored)
+
     class StoreSortFieldAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             sort_fields = []
@@ -80,8 +86,9 @@ def parse_args(argv=None):
     parser.add_argument(
         "-i",
         "--ignore",
-        action="append",
-        help="ignore subdir or file path",
+        action=ExtendIgnoreAction,
+        help="comma-separated list of subdirs or file paths to ignore. "
+        "Can be given several times, values are accumulated.",
         default=[],
     )
     parser.add_argument(
