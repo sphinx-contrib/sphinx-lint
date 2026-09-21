@@ -7,7 +7,7 @@ priorities:
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.20
+    rev: c59bba8fb259db0fec2bbb77ad8ba51ea7341b56  # frozen: v0.15.20
     hooks:
       - id: ruff-check
         args: ["--exit-non-zero-on-fix"]
@@ -16,7 +16,7 @@ repos:
         priority: fix-py
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
     hooks:
       - id: check-case-conflict
         priority: check
@@ -36,7 +36,7 @@ repos:
         priority: fix-whitespace
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.37.4
+    rev: 6b63472e72e1a91ed8a2f6d483790dfb644fa1d3  # frozen: 0.37.4
     hooks:
       - id: check-dependabot
         priority: check
@@ -44,32 +44,32 @@ repos:
         priority: check
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.12
+    rev: 914e7df21a07ef503a81201c76d2b11c789d3fca  # frozen: v1.7.12
     hooks:
       - id: actionlint
         priority: check
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.26.1
+    rev: e3eebf65325ccc992422292cb7a4baee967cf815  # frozen: v1.26.1
     hooks:
       - id: zizmor
         priority: check
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.25.1
+    rev: 0c8c15d8fe996493035be407c5cf4a288cf6bf8e  # frozen: v2.25.1
     hooks:
       - id: pyproject-fmt
         additional_dependencies: [tox]
         priority: fix
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.25
+    rev: 4b2e70d08cb2ccd26d1fba73588de41c7a5d50b7  # frozen: v0.25
     hooks:
       - id: validate-pyproject
         priority: check
 
   - repo: https://github.com/tox-dev/tox-ini-fmt
-    rev: 1.7.1
+    rev: a55736a49694e73b4b885c78a827d9771515b9dd  # frozen: 1.7.1
     hooks:
       - id: tox-ini-fmt
         priority: fix
