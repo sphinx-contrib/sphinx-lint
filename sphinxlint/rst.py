@@ -288,6 +288,11 @@ TRIPLE_BACKTICKS_RE = re.compile(
     rf"(?:{START_STRING_PREFIX})```[^`]+?(?<!{START_STRING_PREFIX})```(?:{END_STRING_SUFFIX})"
 )
 
+# A whole line made of a markdown code fence: three or more backticks
+# optionally followed by an info string. A line also containing a closing
+# fence is an inline use of triple backticks, handled by TRIPLE_BACKTICKS_RE.
+MARKDOWN_CODE_FENCE_RE = re.compile(r"^ *`{3,}[^`]*$")
+
 ROLE_MISSING_CLOSING_BACKTICK_RE = re.compile(rf"({ROLE_HEAD}`[^`]+?)[^`]*$")
 
 ROLE_WITH_UNNECESSARY_PARENTHESES_RE = re.compile(r"(^|\s):(func|meth):`[^`]+\(\)`")
