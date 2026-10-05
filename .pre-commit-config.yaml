@@ -7,7 +7,7 @@ priorities:
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: c59bba8fb259db0fec2bbb77ad8ba51ea7341b56  # frozen: v0.15.20
+    rev: f12be1ebaa5351c1fc76472de98db2c3446c8253  # frozen: v0.16.10
     hooks:
       - id: ruff-check
         args: ["--exit-non-zero-on-fix"]
@@ -36,7 +36,7 @@ repos:
         priority: fix-whitespace
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 6b63472e72e1a91ed8a2f6d483790dfb644fa1d3  # frozen: 0.37.4
+    rev: 4f85d46a92dc17713078e5de73f8a13190edf6fc  # frozen: 0.38.2
     hooks:
       - id: check-dependabot
         priority: check
@@ -50,26 +50,26 @@ repos:
         priority: check
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: e3eebf65325ccc992422292cb7a4baee967cf815  # frozen: v1.26.1
+    rev: fa412071e4f5d44d44f9e365f4676f9df92456a2  # frozen: v1.30.1
     hooks:
       - id: zizmor
         priority: check
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: 0c8c15d8fe996493035be407c5cf4a288cf6bf8e  # frozen: v2.25.1
+    rev: a72ae8edd6eeddb9d942168912362945651212f8  # frozen: v2.30.1
     hooks:
       - id: pyproject-fmt
         additional_dependencies: [tox]
         priority: fix
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: 4b2e70d08cb2ccd26d1fba73588de41c7a5d50b7  # frozen: v0.25
+    rev: 17e12779811926f000bdfa1795f9e3735dd71ac3  # frozen: 0.26
     hooks:
       - id: validate-pyproject
         priority: check
 
   - repo: https://github.com/tox-dev/tox-ini-fmt
-    rev: a55736a49694e73b4b885c78a827d9771515b9dd  # frozen: 1.7.1
+    rev: 241ced4140307006cfd8b2b9ccfd43b1139cfe4a  # frozen: 1.9.0
     hooks:
       - id: tox-ini-fmt
         priority: fix
