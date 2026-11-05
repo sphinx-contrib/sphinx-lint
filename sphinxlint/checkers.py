@@ -80,6 +80,8 @@ def check_missing_space_after_literal(file, lines, options=None):
     Good: ``items``\ s
     """
     for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
+            continue
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
@@ -106,6 +108,8 @@ def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
     Good: ``hello`` world
     """
     for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
+            continue
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
@@ -214,6 +218,8 @@ def check_missing_space_after_role(file, lines, options=None):
     Good: :exc:`Exceptions`\ s
     """
     for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
+            continue
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
@@ -357,6 +363,8 @@ def check_missing_space_before_role(file, lines, options=None):
     Good: the :fct:`sum`, :issue:`123`, :c:func:`foo`
     """
     for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
+            continue
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
@@ -384,6 +392,8 @@ def check_missing_space_before_default_role(file, lines, options=None):
     Good: the `sum`
     """
     for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
+            continue
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
@@ -412,6 +422,8 @@ def check_hyperlink_reference_missing_backtick(file, lines, options=None):
     Good: `Misc/NEWS <https://github.com/python/cpython/blob/v3.2.6/Misc/NEWS>`_
     """
     for paragraph_lno, paragraph in paragraphs(lines):
+        if "`" not in paragraph:
+            continue
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
