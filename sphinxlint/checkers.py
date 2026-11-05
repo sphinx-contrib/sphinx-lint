@@ -7,8 +7,8 @@ from sphinxlint.utils import (
     clean_paragraph,
     escape2null,
     hide_non_rst_blocks,
+    inline_literal_spans,
     looks_like_glued,
-    match_size,
     paragraphs,
 )
 
@@ -313,24 +313,15 @@ def check_role_with_double_backticks(file, lines, options=None):
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = escape2null(paragraph)
-        while True:
-            inline_literal = min(
-                rst.INLINE_LITERAL_RE.finditer(paragraph, overlapped=True),
-                key=match_size,
-                default=None,
-            )
-            if inline_literal is None:
-                break
-            before = paragraph[: inline_literal.start()]
+        for start, end in inline_literal_spans(paragraph):
+            before = paragraph[:start]
             if _ends_with_role_tag(before):
-                error_offset = paragraph[: inline_literal.start()].count("\n")
+                error_offset = before.count("\n")
                 yield (
                     paragraph_lno + error_offset,
                     "role use a single backtick, double backtick found.",
                 )
-            paragraph = (
-                paragraph[: inline_literal.start()] + paragraph[inline_literal.end() :]
-            )
+            paragraph = before + paragraph[end:]
 
 
 @checker(".rst", ".po")

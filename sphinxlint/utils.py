@@ -43,6 +43,29 @@ def _clean_heuristic(paragraph, regex, needle):
 
 
 @per_file_cache
+def inline_literal_spans(paragraph):
+    """Find the well formed inline literals of an escape2null-ed paragraph.
+
+    Returns the (start, end) spans to remove one after the other, most
+    "credible" first: each span applies to the paragraph with the
+    previous spans already removed.
+    """
+    spans = []
+    while "``" in paragraph:
+        candidate = min(
+            rst.INLINE_LITERAL_RE.finditer(paragraph, overlapped=True),
+            key=match_size,
+            default=None,
+        )
+        if candidate is None:
+            break
+        start, end = candidate.span()
+        spans.append((start, end))
+        paragraph = paragraph[:start] + paragraph[end:]
+    return tuple(spans)
+
+
+@per_file_cache
 def clean_paragraph(paragraph):
     """Removes all good constructs, so detectors can focus on bad ones.
 
@@ -53,7 +76,8 @@ def clean_paragraph(paragraph):
         # Nothing to remove: all the constructs below need a backtick.
         return paragraph.replace("\x00", "\\")
     paragraph = escape2null(paragraph)
-    paragraph = _clean_heuristic(paragraph, rst.INLINE_LITERAL_RE, "``")
+    for start, end in inline_literal_spans(paragraph):
+        paragraph = paragraph[:start] + paragraph[end:]
     paragraph = _clean_heuristic(paragraph, rst.INLINE_INTERNAL_TARGET_RE, "_`")
     paragraph = _clean_heuristic(paragraph, rst.HYPERLINK_REFERENCES_RE, "`_")
     paragraph = _clean_heuristic(
