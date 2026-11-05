@@ -20,8 +20,11 @@ def match_size(re_match):
     return re_match.end() - re_match.start()
 
 
-def _clean_heuristic(paragraph, regex):
+def _clean_heuristic(paragraph, regex, needle):
     """Remove the regex from the paragraph.
+
+    `needle` is a string the regex needs in order to match:
+    the (slow) regex is skipped for paragraphs not containing it.
 
     The remove starts by most "credible" ones (here lies the dragons).
 
@@ -29,13 +32,14 @@ def _clean_heuristic(paragraph, regex):
     removing everything (eating a lone `(`), while the most credible
     action to take is to remove `(jkl)`, leaving a lone `(`.
     """
-    while True:
+    while needle in paragraph:
         candidate = min(
             regex.finditer(paragraph, overlapped=True), key=match_size, default=None
         )
         if candidate is None:
-            return paragraph
+            break
         paragraph = paragraph[: candidate.start()] + paragraph[candidate.end() :]
+    return paragraph
 
 
 @per_file_cache
@@ -45,11 +49,16 @@ def clean_paragraph(paragraph):
     It removes all well formed inline literals, inline internal
     targets, and roles.
     """
+    if "`" not in paragraph:
+        # Nothing to remove: all the constructs below need a backtick.
+        return paragraph.replace("\x00", "\\")
     paragraph = escape2null(paragraph)
-    paragraph = _clean_heuristic(paragraph, rst.INLINE_LITERAL_RE)
-    paragraph = _clean_heuristic(paragraph, rst.INLINE_INTERNAL_TARGET_RE)
-    paragraph = _clean_heuristic(paragraph, rst.HYPERLINK_REFERENCES_RE)
-    paragraph = _clean_heuristic(paragraph, rst.ANONYMOUS_HYPERLINK_REFERENCES_RE)
+    paragraph = _clean_heuristic(paragraph, rst.INLINE_LITERAL_RE, "``")
+    paragraph = _clean_heuristic(paragraph, rst.INLINE_INTERNAL_TARGET_RE, "_`")
+    paragraph = _clean_heuristic(paragraph, rst.HYPERLINK_REFERENCES_RE, "`_")
+    paragraph = _clean_heuristic(
+        paragraph, rst.ANONYMOUS_HYPERLINK_REFERENCES_RE, "`__"
+    )
     paragraph = rst.NORMAL_ROLE_RE.sub("", paragraph)
     return paragraph.replace("\x00", "\\")
 
