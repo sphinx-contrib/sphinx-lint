@@ -153,6 +153,9 @@ _COMMENT_RE = re.compile(r"^ *\.\. ")
 
 def is_multiline_non_rst_block(line):
     """Returns True if the next lines are an indented literal block."""
+    if ".." not in line and "::" not in line:
+        # Fast path: everything below needs one or the other.
+        return False
     if _START_OF_COMMENT_BLOCK_RE.search(line):
         return True
     if rst.DIRECTIVES_CONTAINING_RST_RE.match(line):
