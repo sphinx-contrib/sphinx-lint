@@ -54,7 +54,9 @@ def check_missing_backtick_after_role(file, lines, options=None):
     Good: :fct:`foo`
     """
     for paragraph_lno, paragraph in paragraphs(lines):
-        if "`" not in paragraph:
+        # A match runs from a role's opening backtick to the end of the
+        # paragraph, so that backtick is the last one in the paragraph.
+        if not paragraph.rpartition("`")[0].endswith(":"):
             continue
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
