@@ -81,6 +81,8 @@ def check_missing_space_after_literal(file, lines, options=None):
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
+        if "``" not in paragraph:
+            continue
         for role in _RST_ROLE_RE.finditer(paragraph):
             if not _END_STRING_SUFFIX_RE.match(role[0][-1]):
                 error_offset = paragraph[: role.start()].count("\n")
@@ -105,6 +107,8 @@ def check_unbalanced_inline_literals_delimiters(file, lines, options=None):
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
+        if "``" not in paragraph:
+            continue
         for lone_double_backtick in _LONE_DOUBLE_BACKTICK_RE.finditer(paragraph):
             error_offset = paragraph[: lone_double_backtick.start()].count("\n")
             yield (
@@ -128,6 +132,8 @@ def check_default_role(file, lines, options=None):
         if "`" not in line:
             continue
         line = clean_paragraph(line)
+        if "`" not in line:
+            continue
         line = escape2null(line)
         for match in rst.INTERPRETED_TEXT_RE.finditer(line):
             before_match = line[: match.start()]
@@ -209,6 +215,8 @@ def check_missing_space_after_role(file, lines, options=None):
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
+        if ":`" not in paragraph:
+            continue
         for role in _SUSPICIOUS_ROLE.finditer(paragraph):
             error_offset = paragraph[: role.start()].count("\n")
             yield (
@@ -350,6 +358,8 @@ def check_missing_space_before_role(file, lines, options=None):
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
+        if ":`" not in paragraph:
+            continue
         for match in rst.ROLE_GLUED_WITH_WORD_RE.finditer(paragraph):
             error_offset = paragraph[: match.start()].count("\n")
             if looks_like_glued(match):
@@ -375,6 +385,8 @@ def check_missing_space_before_default_role(file, lines, options=None):
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
+        if "`" not in paragraph:
+            continue
         paragraph = rst.INTERPRETED_TEXT_RE.sub("", paragraph)
         for role in rst.inline_markup_gen(
             "`", "`", extra_allowed_before="[^_]"
@@ -401,6 +413,8 @@ def check_hyperlink_reference_missing_backtick(file, lines, options=None):
         if paragraph.count("|") > 4:
             continue  # we don't handle tables yet.
         paragraph = clean_paragraph(paragraph)
+        if "<" not in paragraph:
+            continue
         paragraph = rst.INTERPRETED_TEXT_RE.sub("", paragraph)
         for hyperlink_reference in _HYPERLINK_REFERENCE_RE.finditer(paragraph):
             error_offset = paragraph[: hyperlink_reference.start()].count("\n")
