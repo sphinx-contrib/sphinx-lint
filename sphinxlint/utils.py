@@ -198,16 +198,17 @@ def is_multiline_non_rst_block(line):
 _ZERO_OR_MORE_SPACES_RE = re.compile(" *")
 
 
-def hide_non_rst_blocks(lines, hidden_block_cb=None):
-    """Filters out literal, comments, code blocks, ...
+@per_file_cache
+def _hide_non_rst_blocks(lines):
+    """Return the filtered lines and the hidden blocks.
 
-    The filter actually replace "removed" lines by empty lines, so the
-    line numbering still make sense.
+    The hidden blocks are (line number, block) pairs.
     """
     in_literal = None
     excluded_lines = []
     block_line_start = None
     output = []
+    hidden_blocks = []
     for lineno, line in enumerate(lines, start=1):
         if in_literal is not None:
             current_indentation = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
@@ -216,8 +217,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
                 line = "\n"  # Hiding line
             else:
                 in_literal = None
-                if hidden_block_cb:
-                    hidden_block_cb(block_line_start, "".join(excluded_lines))
+                hidden_blocks.append((block_line_start, "".join(excluded_lines)))
                 excluded_lines = []
         if in_literal is None and is_multiline_non_rst_block(line):
             in_literal = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
@@ -226,9 +226,22 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
             if type_of_explicit_markup(line) == "comment" and _COMMENT_RE.search(line):
                 line = "\n"
         output.append(line)
-    if excluded_lines and hidden_block_cb:
-        hidden_block_cb(block_line_start, "".join(excluded_lines))
-    return tuple(output)
+    if excluded_lines:
+        hidden_blocks.append((block_line_start, "".join(excluded_lines)))
+    return tuple(output), tuple(hidden_blocks)
+
+
+def hide_non_rst_blocks(lines, hidden_block_cb=None):
+    """Filters out literal, comments, code blocks, ...
+
+    The filter actually replace "removed" lines by empty lines, so the
+    line numbering still make sense.
+    """
+    output, hidden_blocks = _hide_non_rst_blocks(tuple(lines))
+    if hidden_block_cb:
+        for block_line_start, block in hidden_blocks:
+            hidden_block_cb(block_line_start, block)
+    return output
 
 
 _starts_with_directive_marker = re.compile(rf"\.\. {rst.ALL_DIRECTIVES}::").match
