@@ -90,3 +90,16 @@ def test_line_no_in_error_msg(file, capsys):
     assert "paragraphs.rst:70: role use a single backtick" in err
     assert "paragraphs.rst:65: inline literal missing (escaped) space" in err
     assert has_errors
+
+
+@pytest.mark.parametrize("file", [str(FIXTURE_DIR / "po" / "minimal2.po")])
+def test_po_line_no_in_error_msg(file, capsys):
+    has_errors = main(["sphinxlint.py", file])
+
+    out, err = capsys.readouterr()
+
+    assert out == ""
+    assert has_errors
+
+    assert "minimal2.po:7:" in err
+    assert "minimal2.po:16:" in err

@@ -1,0 +1,17 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: ../../library/example.rst:10
+msgid "Short one."
+msgstr "Also short, and it has an ``unbalanced literal here."
+
+#: ../../library/example.rst:22
+msgid ""
+"This original English sentence is deliberately long enough that xgettext "
+"wraps it across two physical lines in the source file."
+msgstr ""
+"Line one of the translation, totally fine.\n"
+"Line two, also fine, nothing wrong here.\n"
+"Line three has the bug: an ``unbalanced literal here.\n"
+"Line four is fine again, closing things off.\n"

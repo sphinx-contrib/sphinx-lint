@@ -219,14 +219,81 @@ def type_of_explicit_markup(line):
     return "comment"
 
 
-def po2rst(text):
-    """Extract msgstr entries from a po content, keeping linenos."""
+_MSGSTR_RE = re.compile(r'^\s*msgstr\s+"(.*)"$')
+_MSGSTR_PLURAL_RE = re.compile(r"^\s*msgstr\[\d+\]")
+
+
+def _find_msgstr_content_start(raw_lines, entry_linenum):
+    """Return the physical line where translated msgstr content starts.
+
+    Falls back to entry.linenum if the location cannot be determined.
+    """
+    start = max(entry_linenum - 1, 0)
+
+    for i in range(start, len(raw_lines)):
+        line = raw_lines[i]
+
+        if _MSGSTR_PLURAL_RE.match(line):
+            # Fall back to the entry start for plural translations.
+            # They can be handled more precisely in a future improvement.
+            return entry_linenum
+
+        match = _MSGSTR_RE.match(line)
+        if match:
+            # msgstr "text"
+            if match.group(1):
+                return i + 1
+
+            # msgstr ""
+            # "..."
+            return i + 2
+
+        # Once we've moved past the entry header, stop only if we reach
+        # the beginning of the *next* entry. Do not stop on the current
+        # entry's own msgid/msgstr fields.
+        if (
+            i > start
+            and line.startswith("#:")
+            and i + 1 < len(raw_lines)
+            and raw_lines[i + 1].startswith("msgid")
+        ):
+            break
+
+    return entry_linenum
+
+
+def po2rst(text, return_mapping=False):
+    """Extract translated text from a PO file.
+
+    When ``return_mapping`` is True, also return a mapping from generated
+    RST line numbers to the corresponding source PO line numbers.
+    """
     output = []
+    mapping = {}
+
+    raw_lines = text.splitlines()
     po = pofile(text, encoding="UTF-8")
+
     for entry in po.translated_entries():
-        # Don't check original msgid, assume it's checked directly.
+        # Preserve historical behaviour for synthetic in-memory PO strings
+        # used by the existing unit tests.
+        if entry.linenum <= 0:
+            msgstr_line = entry.linenum
+        else:
+            msgstr_line = _find_msgstr_content_start(raw_lines, entry.linenum)
+
         while len(output) + 1 < entry.linenum:
             output.append("\n")
-        for line in entry.msgstr.splitlines():
+
+        for offset, line in enumerate(entry.msgstr.splitlines()):
+            rst_line = len(output) + 1
+
+            mapping[rst_line] = msgstr_line + offset
             output.append(line + "\n")
-    return "".join(output)
+
+    rst = "".join(output)
+
+    if return_mapping:
+        return rst, mapping
+
+    return rst
