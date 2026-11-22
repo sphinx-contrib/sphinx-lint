@@ -56,6 +56,19 @@ def test_enable_all(capsys):
     assert disabled_checkers(all_out) == []
 
 
+def test_disable_unknown_checker(capsys):
+    """Disabling a checker that does not exist is reported, like --enable."""
+    try:
+        main(["sphinxlint", "--disable", "does-not-exist", "--list"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:  # pragma: no cover
+        raise AssertionError("--disable with an unknown checker should exit")
+    out, err = capsys.readouterr()
+    assert err == "Unknown checker: does-not-exist.\n"
+    assert out == ""
+
+
 def test_disable_one(capsys):
     """Disabling one default check moves it into the disabled section."""
     main(["sphinxlint", "--list"])
