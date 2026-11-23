@@ -38,6 +38,7 @@ dependencies = [
 ]
 optional-dependencies.tests = [
   "pytest",
+  "pytest-codspeed",
   "pytest-cov",
 ]
 urls.Changelog = "https://github.com/sphinx-contrib/sphinx-lint/releases"
