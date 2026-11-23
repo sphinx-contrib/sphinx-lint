@@ -36,7 +36,7 @@ def test_sphinxlint_shall_trigger_false_positive(file, capsys):
 def gather_xfail():
     """Find all rst files in the fixtures/xfail directory.
 
-    Each file is searched for lines containing expcted errors, they
+    Each file is searched for lines containing expected errors, they
     are starting with `.. expect: `.
     """
     marker = ".. expect: "
@@ -48,7 +48,7 @@ def gather_xfail():
         yield str(file), expected_errors
 
 
-@pytest.mark.parametrize("file,expected_errors", gather_xfail())
+@pytest.mark.parametrize("file,expected_errors", list(gather_xfail()))
 def test_sphinxlint_shall_not_pass(file, expected_errors, capsys):
     has_errors = main(["sphinxlint.py", "--enable", "all", file])
     out, err = capsys.readouterr()
