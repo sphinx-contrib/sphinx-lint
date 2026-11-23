@@ -20,8 +20,11 @@ def match_size(re_match):
     return re_match.end() - re_match.start()
 
 
-def _clean_heuristic(paragraph, regex):
+def _clean_heuristic(paragraph, regex, needle):
     """Remove the regex from the paragraph.
+
+    `needle` is a string the regex needs in order to match:
+    the (slow) regex is skipped for paragraphs not containing it.
 
     The remove starts by most "credible" ones (here lies the dragons).
 
@@ -29,13 +32,37 @@ def _clean_heuristic(paragraph, regex):
     removing everything (eating a lone `(`), while the most credible
     action to take is to remove `(jkl)`, leaving a lone `(`.
     """
-    while True:
+    while needle in paragraph:
         candidate = min(
             regex.finditer(paragraph, overlapped=True), key=match_size, default=None
         )
         if candidate is None:
-            return paragraph
+            break
         paragraph = paragraph[: candidate.start()] + paragraph[candidate.end() :]
+    return paragraph
+
+
+@per_file_cache
+def inline_literal_spans(paragraph):
+    """Find the well formed inline literals of an escape2null-ed paragraph.
+
+    Returns the (start, end) spans to remove one after the other, most
+    "credible" first: each span applies to the paragraph with the
+    previous spans already removed.
+    """
+    spans = []
+    while "``" in paragraph:
+        candidate = min(
+            rst.INLINE_LITERAL_RE.finditer(paragraph, overlapped=True),
+            key=match_size,
+            default=None,
+        )
+        if candidate is None:
+            break
+        start, end = candidate.span()
+        spans.append((start, end))
+        paragraph = paragraph[:start] + paragraph[end:]
+    return tuple(spans)
 
 
 @per_file_cache
@@ -45,11 +72,17 @@ def clean_paragraph(paragraph):
     It removes all well formed inline literals, inline internal
     targets, and roles.
     """
+    if "`" not in paragraph:
+        # Nothing to remove: all the constructs below need a backtick.
+        return paragraph.replace("\x00", "\\")
     paragraph = escape2null(paragraph)
-    paragraph = _clean_heuristic(paragraph, rst.INLINE_LITERAL_RE)
-    paragraph = _clean_heuristic(paragraph, rst.INLINE_INTERNAL_TARGET_RE)
-    paragraph = _clean_heuristic(paragraph, rst.HYPERLINK_REFERENCES_RE)
-    paragraph = _clean_heuristic(paragraph, rst.ANONYMOUS_HYPERLINK_REFERENCES_RE)
+    for start, end in inline_literal_spans(paragraph):
+        paragraph = paragraph[:start] + paragraph[end:]
+    paragraph = _clean_heuristic(paragraph, rst.INLINE_INTERNAL_TARGET_RE, "_`")
+    paragraph = _clean_heuristic(paragraph, rst.HYPERLINK_REFERENCES_RE, "`_")
+    paragraph = _clean_heuristic(
+        paragraph, rst.ANONYMOUS_HYPERLINK_REFERENCES_RE, "`__"
+    )
     paragraph = rst.NORMAL_ROLE_RE.sub("", paragraph)
     return paragraph.replace("\x00", "\\")
 
@@ -144,6 +177,9 @@ _COMMENT_RE = re.compile(r"^ *\.\. ")
 
 def is_multiline_non_rst_block(line):
     """Returns True if the next lines are an indented literal block."""
+    if ".." not in line and "::" not in line:
+        # Fast path: everything below needs one or the other.
+        return False
     if _START_OF_COMMENT_BLOCK_RE.search(line):
         return True
     if rst.DIRECTIVES_CONTAINING_RST_RE.match(line):
@@ -162,16 +198,17 @@ def is_multiline_non_rst_block(line):
 _ZERO_OR_MORE_SPACES_RE = re.compile(" *")
 
 
-def hide_non_rst_blocks(lines, hidden_block_cb=None):
-    """Filters out literal, comments, code blocks, ...
+@per_file_cache
+def _hide_non_rst_blocks(lines):
+    """Return the filtered lines and the hidden blocks.
 
-    The filter actually replace "removed" lines by empty lines, so the
-    line numbering still make sense.
+    The hidden blocks are (line number, block) pairs.
     """
     in_literal = None
     excluded_lines = []
     block_line_start = None
     output = []
+    hidden_blocks = []
     for lineno, line in enumerate(lines, start=1):
         if in_literal is not None:
             current_indentation = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
@@ -180,8 +217,7 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
                 line = "\n"  # Hiding line
             else:
                 in_literal = None
-                if hidden_block_cb:
-                    hidden_block_cb(block_line_start, "".join(excluded_lines))
+                hidden_blocks.append((block_line_start, "".join(excluded_lines)))
                 excluded_lines = []
         if in_literal is None and is_multiline_non_rst_block(line):
             in_literal = len(_ZERO_OR_MORE_SPACES_RE.match(line)[0])
@@ -190,9 +226,22 @@ def hide_non_rst_blocks(lines, hidden_block_cb=None):
             if type_of_explicit_markup(line) == "comment" and _COMMENT_RE.search(line):
                 line = "\n"
         output.append(line)
-    if excluded_lines and hidden_block_cb:
-        hidden_block_cb(block_line_start, "".join(excluded_lines))
-    return tuple(output)
+    if excluded_lines:
+        hidden_blocks.append((block_line_start, "".join(excluded_lines)))
+    return tuple(output), tuple(hidden_blocks)
+
+
+def hide_non_rst_blocks(lines, hidden_block_cb=None):
+    """Filters out literal, comments, code blocks, ...
+
+    The filter actually replace "removed" lines by empty lines, so the
+    line numbering still make sense.
+    """
+    output, hidden_blocks = _hide_non_rst_blocks(tuple(lines))
+    if hidden_block_cb:
+        for block_line_start, block in hidden_blocks:
+            hidden_block_cb(block_line_start, block)
+    return output
 
 
 _starts_with_directive_marker = re.compile(rf"\.\. {rst.ALL_DIRECTIVES}::").match
