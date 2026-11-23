@@ -46,7 +46,12 @@ def parse_args(argv=None):
             if values == "all":
                 enabled_checkers_names.clear()
             else:
-                enabled_checkers_names.difference_update(values.split(","))
+                names = values.split(",")
+                for name in names:
+                    if name not in all_checkers:
+                        print(f"Unknown checker: {name}.", file=sys.stderr)
+                        sys.exit(2)
+                enabled_checkers_names.difference_update(names)
 
     class StoreSortFieldAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
