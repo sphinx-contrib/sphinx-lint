@@ -57,13 +57,34 @@ def check_file(filename, checkers, options: CheckersOptions = None):
         try:
             with open(filename, encoding="utf-8") as f:
                 text = f.read()
+
+            po_mapping = None
+
             if filename.endswith(".po"):
-                text = po2rst(text)
+                text, po_mapping = po2rst(text, return_mapping=True)
         except OSError as err:
             return [f"{filename}: cannot open: {err}"]
         except UnicodeDecodeError as err:
             return [f"{filename}: cannot decode as UTF-8: {err}"]
-        return check_text(filename, text, checkers, options)
+        errors = check_text(filename, text, checkers, options)
+
+        if po_mapping is not None:
+            remapped = []
+
+            for error in errors:
+                line_no = po_mapping.get(error.line_no, error.line_no)
+                remapped.append(
+                    LintError(
+                        error.filename,
+                        line_no,
+                        error.msg,
+                        error.checker_name,
+                    )
+                )
+
+            return remapped
+
+        return errors
     finally:
         for memoized_function in PER_FILE_CACHES:
             memoized_function.cache_clear()
