@@ -507,6 +507,54 @@ def check_triple_backticks(file, lines, options=None):
             yield lno + 1, "There's no rst syntax using triple backticks"
 
 
+@checker(".rst", ".po")
+def check_markdown_code_fence(file, lines, options=None):
+    """Check for markdown code fences, which rst does not support.
+
+    Bad:  ```python
+    Good: .. code-block:: python
+
+    Sphinx renders a fenced block as plain text without emitting any
+    warning, so the mistake is silent in the built HTML.
+    """
+    stripped = [line.rstrip() for line in lines]
+    in_fence = False
+    for lno, line in enumerate(stripped):
+        if not rst.MARKDOWN_CODE_FENCE_RE.match(line):
+            continue
+        if _is_section_adornment(stripped, lno):
+            continue
+        if in_fence:
+            in_fence = False  # Closing fence, the block is already reported.
+            continue
+        in_fence = True
+        yield (
+            lno + 1,
+            'markdown code fence found, rst uses a literal block ("::") '
+            'or a "code-block" directive',
+        )
+
+
+def _is_section_adornment(stripped_lines, lno):
+    """Tell whether a line of backticks underlines or overlines a title.
+
+    A backtick is a valid section title adornment character, so a line
+    made only of backticks is a title adornment as soon as it is adjacent
+    to a shorter-or-equal line of text.
+    """
+    line = stripped_lines[lno]
+    if line.strip(" `"):
+        return False  # An info string: markdown, not an adornment.
+    neighbours = []
+    if lno > 0:
+        neighbours.append(stripped_lines[lno - 1])
+    if lno + 1 < len(stripped_lines):
+        neighbours.append(stripped_lines[lno + 1])
+    return any(
+        neighbour.strip() and len(neighbour) <= len(line) for neighbour in neighbours
+    )
+
+
 _has_bad_dedent = re.compile(" [^ ].*::$").match
 
 
